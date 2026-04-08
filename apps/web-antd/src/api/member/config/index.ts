@@ -17,6 +17,6 @@ export function getConfig() {
 }
 
 /** 新增修改积分设置 */
-export function saveConfig(data: MemberConfigApi.Config) {
-  return requestClient.put('/member/config/save', data);
+export function updateConfig(data: MemberConfigApi.Config) {
+  return requestClient.put('/member/config/update', data);
 }

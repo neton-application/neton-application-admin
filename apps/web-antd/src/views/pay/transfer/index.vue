@@ -35,7 +35,7 @@ function handleDetail(row: PayTransferApi.Transfer) {
   detailModalApi.setData(row).open();
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<PayTransferApi.Transfer>({
   formOptions: {
     schema: useGridFormSchema(),
   },
@@ -66,7 +66,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
       search: true,
     },
   } as VxeTableGridOptions<PayTransferApi.Transfer>,
-});
+} as any);
 </script>
 
 <template>

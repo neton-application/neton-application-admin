@@ -35,7 +35,7 @@ function handleDetail(row: PayRefundApi.Refund) {
   detailModalApi.setData(row).open();
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<PayRefundApi.Refund>({
   formOptions: {
     schema: useGridFormSchema(),
   },
@@ -66,7 +66,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
       search: true,
     },
   } as VxeTableGridOptions<PayRefundApi.Refund>,
-});
+} as any);
 </script>
 <template>
   <Page auto-content-height>

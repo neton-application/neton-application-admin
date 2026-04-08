@@ -146,7 +146,7 @@ function handleRowCheckboxChange({ records }: { records: InfraJobApi.Job[] }) {
   checkedIds.value = records.map((item) => item.id!);
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<InfraJobApi.Job>({
   formOptions: {
     schema: useGridFormSchema(),
   },
@@ -178,7 +178,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
     checkboxAll: handleRowCheckboxChange,
     checkboxChange: handleRowCheckboxChange,
   },
-});
+} as any);
 </script>
 
 <template>

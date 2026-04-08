@@ -10,7 +10,7 @@ import { getTransactionPage } from '#/api/pay/wallet/transaction';
 
 import { useTransactionGridColumns } from '../data';
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<WalletTransactionApi.Transaction>({
   gridOptions: {
     columns: useTransactionGridColumns(),
     height: 'auto',
@@ -34,7 +34,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
       enabled: false,
     },
   } as VxeTableGridOptions<WalletTransactionApi.Transaction>,
-});
+} as any);
 
 const [Modal, modalApi] = useVbenModal({
   async onOpenChange(isOpen: boolean) {

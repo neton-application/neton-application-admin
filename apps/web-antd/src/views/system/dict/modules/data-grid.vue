@@ -95,7 +95,7 @@ function handleRowCheckboxChange({
   checkedIds.value = records.map((item) => item.id!);
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<any>({
   formOptions: {
     schema: useDataGridFormSchema(),
   },
@@ -128,7 +128,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
     checkboxAll: handleRowCheckboxChange,
     checkboxChange: handleRowCheckboxChange,
   },
-});
+} as any);
 
 /** 监听 dictType 变化，重新查询 */
 watch(

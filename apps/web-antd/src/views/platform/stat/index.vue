@@ -1,22 +1,25 @@
 <script lang="ts" setup>
 import type { StatApi } from '#/api/platform/stat';
 
-import { ref, h, reactive, onMounted, nextTick } from 'vue';
+import { h, onMounted, reactive, ref } from 'vue';
 
 import { Page, useVbenModal } from '@vben/common-ui';
-import { getDictOptions } from '@vben/hooks';
 import { useTableToolbar, VbenVxeTableToolbar } from '@vben/plugins/vxe-table';
-import { cloneDeep, downloadFileFromBlobPart, formatDateTime, isEmpty } from '@vben/utils';
-import { Button, Card, message, Tabs, Pagination, Form, RangePicker, DatePicker, Select, Input } from 'ant-design-vue';
-import StatForm from './modules/form.vue';
-import { Download, Plus, RefreshCw, Search, Trash2 } from '@vben/icons';
-import { DictTag } from '#/components/dict-tag';
+import {
+  cloneDeep,
+  downloadFileFromBlobPart,
+  formatDateTime,
+  isEmpty,
+} from '@vben/utils';
+import { Download, Plus, Trash2 } from '@vben/icons';
+import { Button, Card, Form, message, Pagination, RangePicker, Select } from 'ant-design-vue';
+
 import { VxeColumn, VxeTable } from '#/adapter/vxe-table';
+import { deleteStat, deleteStatList, exportStat, getStatPage } from '#/api/platform/stat';
+import { $t } from '#/locales';
 import { getRangePickerDefaultProps } from '#/utils/rangePickerProps';
 
-
-import { $t } from '#/locales';
-import { getStatPage, deleteStat, deleteStatList, exportStat } from '#/api/platform/stat';
+import StatForm from './modules/form.vue';
 
 
 const loading = ref(true) // 列表的加载中
@@ -130,7 +133,7 @@ try {
 
 
 /** 初始化 */
-const { hiddenSearchBar, tableToolbarRef, tableRef } = useTableToolbar();
+const { hiddenSearchBar } = useTableToolbar();
 onMounted(() => {
   getList();
 });
@@ -187,7 +190,6 @@ onMounted(() => {
     <Card title="开放平台统计">
       <template #extra>
         <VbenVxeTableToolbar
-            ref="tableToolbarRef"
             v-model:hidden-search="hiddenSearchBar"
         >
           <Button
@@ -223,7 +225,6 @@ onMounted(() => {
         </VbenVxeTableToolbar>
       </template>
       <VxeTable
-          ref="tableRef"
           :data="list"
           show-overflow
           :loading="loading"

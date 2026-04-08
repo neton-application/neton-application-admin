@@ -79,7 +79,7 @@ export function resetUserPassword(id: number, password: string) {
 
 /** 用户状态修改 */
 export function updateUserStatus(id: number, status: number) {
-  return requestClient.put('/system/user/update-status', { id, status });
+  return requestClient.put(`/system/user/update-status/${id}`, { status });
 }
 
 /** 获取用户精简信息列表 */

@@ -7,12 +7,11 @@ import { computed, ref } from 'vue';
 import { useVbenModal } from '@vben/common-ui';
 import { DICT_TYPE } from '@vben/constants';
 import { getDictOptions } from '@vben/hooks';
-import { Tinymce as RichTextarea } from '#/components/tinymce';
-import { ImageUpload, FileUpload } from "#/components/upload";
-import { message, Tabs, Form, Input, Textarea, Select, RadioGroup, Radio, CheckboxGroup, Checkbox, DatePicker, TreeSelect } from 'ant-design-vue';
+import { message } from 'ant-design-vue';
+import { DatePicker, Form, Input, Radio, RadioGroup } from 'ant-design-vue';
 
+import { createClientApi, getClientApi, updateClientApi } from '#/api/platform/clientapi';
 import { $t } from '#/locales';
-import { getClientApi, createClientApi, updateClientApi } from '#/api/platform/clientapi';
 
 const emit = defineEmits(['success']);
 
@@ -122,7 +121,7 @@ const [Modal, modalApi] = useVbenModal({
               <RadioGroup v-model:value="formData.isCustomPrice">
                   <Radio
                           v-for="dict in getDictOptions(DICT_TYPE.PLATFORM_BOOL, 'number')"
-                          :key="dict.value"
+                          :key="String(dict.value)"
                           :value="dict.value"
                   >
                     {{ dict.label }}
@@ -156,7 +155,7 @@ const [Modal, modalApi] = useVbenModal({
               <RadioGroup v-model:value="formData.status">
                   <Radio
                           v-for="dict in getDictOptions(DICT_TYPE.PLATFORM_BOOL, 'number')"
-                          :key="dict.value"
+                          :key="String(dict.value)"
                           :value="dict.value"
                   >
                     {{ dict.label }}

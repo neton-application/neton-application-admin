@@ -101,7 +101,7 @@ async function handleMarkAllRead() {
   }
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<SystemNotifyMessageApi.NotifyMessage>({
   formOptions: {
     schema: useGridFormSchema(),
   },
@@ -138,7 +138,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
     checkboxAll: handleRowCheckboxChange,
     checkboxChange: handleRowCheckboxChange,
   },
-});
+} as any);
 </script>
 <template>
   <Page auto-content-height>

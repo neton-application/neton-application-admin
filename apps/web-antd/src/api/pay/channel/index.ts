@@ -15,8 +15,8 @@ export namespace PayChannelApi {
 }
 
 /** 查询支付渠道详情 */
-export function getChannel(appId: number, code: string) {
-  return requestClient.get<PayChannelApi.Channel>('/pay/channel/get', {
+export function getChannelByAppAndCode(appId: number, code: string) {
+  return requestClient.get<PayChannelApi.Channel>('/pay/channel/get-by-app-and-code', {
     params: { appId, code },
   });
 }

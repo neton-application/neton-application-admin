@@ -27,8 +27,8 @@ export namespace PayWalletApi {
 }
 
 /** 查询用户钱包详情 */
-export function getWallet(params: PayWalletApi.WalletUserQueryReqVO) {
-  return requestClient.get<PayWalletApi.Wallet>('/pay/wallet/get', {
+export function getWalletByUserId(params: PayWalletApi.WalletUserQueryReqVO) {
+  return requestClient.get<PayWalletApi.Wallet>('/pay/wallet/get-by-user-id', {
     params,
   });
 }

@@ -53,7 +53,7 @@ async function handleDelete(
   }
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<WalletRechargePackageApi.WalletRechargePackage>({
   formOptions: {
     schema: useGridFormSchema(),
   },
@@ -81,7 +81,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
       search: true,
     },
   } as VxeTableGridOptions<WalletRechargePackageApi.WalletRechargePackage>,
-});
+} as any);
 </script>
 
 <template>

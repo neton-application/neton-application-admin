@@ -9,7 +9,7 @@ import { getSignInRecordPage } from '#/api/member/signin/record';
 
 import { useGridColumns, useGridFormSchema } from './data';
 
-const [Grid] = useVbenVxeGrid({
+const [Grid] = useVbenVxeGrid<MemberSignInRecordApi.SignInRecord>({
   formOptions: {
     schema: useGridFormSchema(),
   },
@@ -37,7 +37,7 @@ const [Grid] = useVbenVxeGrid({
       search: true,
     },
   } as VxeTableGridOptions<MemberSignInRecordApi.SignInRecord>,
-});
+} as any);
 </script>
 
 <template>

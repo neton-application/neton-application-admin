@@ -29,7 +29,7 @@ function useGridColumns() {
   );
 }
 
-const [Grid] = useVbenVxeGrid({
+const [Grid] = useVbenVxeGrid<MemberPointRecordApi.Record>({
   formOptions: {
     schema: useGridFormSchema(),
   },
@@ -60,7 +60,7 @@ const [Grid] = useVbenVxeGrid({
       search: true,
     },
   } as VxeTableGridOptions<MemberPointRecordApi.Record>,
-});
+} as any);
 </script>
 
 <template>

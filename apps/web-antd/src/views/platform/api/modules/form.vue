@@ -7,13 +7,12 @@ import { computed, ref } from 'vue';
 import { useVbenModal } from '@vben/common-ui';
 import { DICT_TYPE } from '@vben/constants';
 import { getDictOptions } from '@vben/hooks';
-import { Tinymce as RichTextarea } from '#/components/tinymce';
-import { ImageUpload, FileUpload } from "#/components/upload";
-import { message, Tabs, Form, Input, Textarea, Select, RadioGroup, Radio, CheckboxGroup, Checkbox, DatePicker, TreeSelect } from 'ant-design-vue';
-
-import { $t } from '#/locales';
-import { getApi, createApi, updateApi } from '#/api/platform/api';
+import { message } from 'ant-design-vue';
 import { Option } from 'ant-design-vue/es/vc-select';
+import { Form, Input, Radio, RadioGroup, Select, Textarea } from 'ant-design-vue';
+
+import { createApi, getApi, updateApi } from '#/api/platform/api';
+import { $t } from '#/locales';
 
 const emit = defineEmits(['success']);
 
@@ -132,7 +131,7 @@ const [Modal, modalApi] = useVbenModal({
             <Form.Item label="HTTP 方法"   name="httpMethod">
                 <Select  v-model:value="formData.httpMethod">
                     <Option      v-for="dict in getDictOptions(DICT_TYPE.PLATFORM_REQUEST_METHOD)"
-                          :key="dict.value"
+                          :key="String(dict.value)"
                           :value="dict.value"
                   >
                     {{ dict.label }}
@@ -150,7 +149,7 @@ const [Modal, modalApi] = useVbenModal({
               <RadioGroup v-model:value="formData.status">
                   <Radio
                           v-for="dict in getDictOptions(DICT_TYPE.PLATFORM_CLIENT_STATUS, 'number')"
-                          :key="dict.value"
+                          :key="String(dict.value)"
                           :value="dict.value"
                   >
                     {{ dict.label }}
@@ -165,7 +164,7 @@ const [Modal, modalApi] = useVbenModal({
               <Select v-model:value="formData.chargeType" placeholder="请选择计费类型">
                   <Select.Option
                           v-for="dict in getDictOptions(DICT_TYPE.PLATFORM_CHARGE_TYPE, 'number')"
-                          :key="dict.value"
+                          :key="String(dict.value)"
                           :value="dict.value"
                   >
                     {{ dict.label }}

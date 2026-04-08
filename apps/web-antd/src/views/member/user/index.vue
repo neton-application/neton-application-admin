@@ -6,13 +6,11 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { Page, useVbenModal } from '@vben/common-ui';
-import { isEmpty } from '@vben/utils';
 
 import { ACTION_ICON, TableAction, useVbenVxeGrid } from '#/adapter/vxe-table';
 import { getUserPage } from '#/api/member/user';
 import { $t } from '#/locales';
 
-import { CouponSendForm } from '../../mall/promotion/coupon/components';
 import { useGridColumns, useGridFormSchema } from './data';
 import BalanceForm from './modules/balance-form.vue';
 import Form from './modules/form.vue';
@@ -41,11 +39,6 @@ const [LevelFormModal, levelFormModalApi] = useVbenModal({
   destroyOnClose: true,
 });
 
-const [CouponSendFormModal, couponSendFormModalApi] = useVbenModal({
-  connectedComponent: CouponSendForm,
-  destroyOnClose: true,
-});
-
 /** 刷新表格 */
 function handleRefresh() {
   gridApi.query();
@@ -71,15 +64,6 @@ function handleUpdateBalance(row: MemberUserApi.User) {
   balanceFormModalApi.setData(row).open();
 }
 
-/** 发送优惠券 */
-async function handleSendCoupon() {
-  couponSendFormModalApi
-    .setData({
-      userIds: checkedIds.value,
-    })
-    .open();
-}
-
 const checkedIds = ref<number[]>([]);
 function handleRowCheckboxChange({
   records,
@@ -99,7 +83,7 @@ function handleViewDetail(row: MemberUserApi.User) {
   });
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<MemberUserApi.User>({
   formOptions: {
     schema: useGridFormSchema(),
   },
@@ -131,7 +115,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
     checkboxAll: handleRowCheckboxChange,
     checkboxChange: handleRowCheckboxChange,
   },
-});
+} as any);
 </script>
 
 <template>
@@ -146,23 +130,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
     <PointFormModal @success="handleRefresh" />
     <BalanceFormModal @success="handleRefresh" />
     <LevelFormModal @success="handleRefresh" />
-    <CouponSendFormModal />
     <Grid table-title="会员列表">
-      <template #toolbar-tools>
-        <TableAction
-          :actions="[
-            {
-              label: '发送优惠券',
-              type: 'primary',
-              icon: 'lucide:mouse-pointer-2',
-              disabled: isEmpty(checkedIds),
-              auth: ['promotion:coupon:send'],
-              onClick: handleSendCoupon,
-            },
-          ]"
-        />
-      </template>
-
       <template #actions="{ row }">
         <TableAction
           :actions="[

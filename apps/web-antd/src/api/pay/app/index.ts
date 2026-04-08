@@ -19,11 +19,6 @@ export namespace PayAppApi {
     channelCodes?: string[];
   }
 
-  /** 更新状态请求 */
-  export interface AppUpdateStatusReqVO {
-    id: number;
-    status: number;
-  }
 }
 
 /** 查询支付应用列表 */
@@ -49,8 +44,8 @@ export function updateApp(data: PayAppApi.App) {
 }
 
 /** 修改支付应用状态 */
-export function updateAppStatus(data: PayAppApi.AppUpdateStatusReqVO) {
-  return requestClient.put('/pay/app/update-status', data);
+export function updateAppStatus(id: number, status: number) {
+  return requestClient.put(`/pay/app/update-status/${id}`, { status });
 }
 
 /** 删除支付应用 */

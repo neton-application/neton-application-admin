@@ -7,8 +7,7 @@ import { computed, ref } from 'vue';
 import { useVbenModal } from '@vben/common-ui';
 import { DICT_TYPE } from '@vben/constants';
 import { getDictOptions } from '@vben/hooks';
-import { Tinymce as RichTextarea } from '#/components/tinymce';
-import { ImageUpload, FileUpload } from "#/components/upload";
+import { ImageUpload } from '#/components/upload';
 import {
   Button,
   DatePicker,
@@ -19,15 +18,16 @@ import {
   Radio,
   RadioGroup,
   Select,
-  Tabs,
   Textarea,
-  TreeSelect,
-  CheckboxGroup,
-  Checkbox,
 } from 'ant-design-vue';
 
+import {
+  createClient,
+  generateAppId,
+  getClient,
+  updateClient,
+} from '#/api/platform/client';
 import { $t } from '#/locales';
-import { getClient, createClient, updateClient, generateAppId } from '#/api/platform/client';
 
 const emit = defineEmits(['success']);
 
@@ -219,7 +219,7 @@ const [Modal, modalApi] = useVbenModal({
               <Select v-model:value="formData.clientType" placeholder="请选择客户端类型">
                   <Select.Option
                           v-for="dict in getDictOptions(DICT_TYPE.PLATFORM_CLIENT_TYPE, 'number')"
-                          :key="dict.value"
+                          :key="String(dict.value)"
                           :value="dict.value"
                   >
                     {{ dict.label }}
@@ -251,7 +251,7 @@ const [Modal, modalApi] = useVbenModal({
               <RadioGroup v-model:value="formData.status">
                   <Radio
                           v-for="dict in getDictOptions(DICT_TYPE.PLATFORM_CLIENT_STATUS, 'number')"
-                          :key="dict.value"
+                          :key="String(dict.value)"
                           :value="dict.value"
                   >
                     {{ dict.label }}

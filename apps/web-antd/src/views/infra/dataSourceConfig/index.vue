@@ -82,7 +82,7 @@ function handleRowCheckboxChange({
   checkedIds.value = records.map((item) => item.id!).filter((id) => id !== 0);
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<InfraDataSourceConfigApi.DataSourceConfig>({
   gridOptions: {
     columns: useGridColumns(),
     height: 'auto',
@@ -104,7 +104,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
     checkboxAll: handleRowCheckboxChange,
     checkboxChange: handleRowCheckboxChange,
   },
-});
+} as any);
 </script>
 
 <template>

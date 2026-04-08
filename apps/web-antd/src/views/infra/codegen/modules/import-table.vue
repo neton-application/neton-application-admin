@@ -27,7 +27,7 @@ const formData = reactive<InfraCodegenApi.CodegenCreateListReqVO>({
 });
 
 /** 表格实例 */
-const [Grid] = useVbenVxeGrid({
+const [Grid] = useVbenVxeGrid<InfraCodegenApi.DatabaseTable>({
   formOptions: {
     schema: useImportTableFormSchema(),
     submitOnChange: true,
@@ -75,7 +75,7 @@ const [Grid] = useVbenVxeGrid({
       formData.tableNames = records.map((item) => item.name);
     },
   },
-});
+} as any);
 
 /** 模态框实例 */
 const [Modal, modalApi] = useVbenModal({

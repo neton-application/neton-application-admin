@@ -3,6 +3,7 @@ import type {
   ComponentRecordType,
   GenerateMenuAndRoutesOptions,
 } from '@vben/types';
+import type { Component } from 'vue';
 
 import { generateAccessible } from '@vben/access';
 import { preferences } from '@vben/preferences';
@@ -14,7 +15,14 @@ import { BasicLayout, IFrameView } from '#/layouts';
 const forbiddenComponent = () => import('#/views/_core/fallback/forbidden.vue');
 
 async function generateAccess(options: GenerateMenuAndRoutesOptions) {
-  const pageMap: ComponentRecordType = import.meta.glob('../views/**/*.vue');
+  const pageMap: ComponentRecordType = Object.fromEntries(
+    Object.entries(import.meta.glob('../views/**/*.vue')).filter(
+      ([path]) =>
+        !path.includes('/mall/') &&
+        !path.includes('/report/') &&
+        !path.includes('/infra/demo/'),
+    ),
+  ) as Record<string, () => Promise<Component>>;
   const accessStore = useAccessStore();
 
   const layoutMap: ComponentRecordType = {

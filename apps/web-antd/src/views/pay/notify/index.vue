@@ -28,7 +28,7 @@ function handleDetail(row: PayNotifyApi.NotifyTask) {
   detailModalApi.setData(row).open();
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<PayNotifyApi.NotifyTask>({
   formOptions: {
     schema: useGridFormSchema(),
   },
@@ -59,7 +59,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
       search: true,
     },
   } as VxeTableGridOptions<PayNotifyApi.NotifyTask>,
-});
+} as any);
 </script>
 <template>
   <Page auto-content-height>

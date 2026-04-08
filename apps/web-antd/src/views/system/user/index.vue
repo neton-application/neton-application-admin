@@ -155,7 +155,7 @@ async function handleStatusChange(
   });
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<any>({
   formOptions: {
     schema: useGridFormSchema(),
   },
@@ -188,7 +188,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
     checkboxAll: handleRowCheckboxChange,
     checkboxChange: handleRowCheckboxChange,
   },
-});
+} as any);
 </script>
 
 <template>

@@ -43,7 +43,11 @@ export function getApiErrorLogPage(params: PageParam) {
 /** 更新 API 错误日志的处理状态 */
 export function updateApiErrorLogStatus(id: number, processStatus: number) {
   return requestClient.put(
-    `/infra/api-error-log/update-status/${id}?processStatus=${processStatus}`,
+    `/infra/api-error-log/update-status/${id}`,
+    undefined,
+    {
+      params: { processStatus },
+    },
   );
 }
 

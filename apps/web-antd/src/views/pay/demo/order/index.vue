@@ -57,7 +57,7 @@ async function handleRefund(row: DemoOrderApi.Order) {
   }
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<DemoOrderApi.Order>({
   gridOptions: {
     columns: useGridColumns(),
     height: 'auto',
@@ -81,7 +81,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
       refresh: true,
     },
   } as VxeTableGridOptions<DemoOrderApi.Order>,
-});
+} as any);
 </script>
 
 <template>

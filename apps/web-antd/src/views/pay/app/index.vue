@@ -72,10 +72,7 @@ async function handleStatusChange(
     })
       .then(async () => {
         // 更新状态
-        await updateAppStatus({
-          id: row.id!,
-          status: newStatus,
-        });
+        await updateAppStatus(row.id!, newStatus);
         // 提示并返回成功
         message.success(`${text}成功`);
         resolve(true);
@@ -104,7 +101,7 @@ function createChannelConfigAction(
   ];
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<PayAppApi.App>({
   formOptions: {
     schema: useGridFormSchema(),
   },
@@ -132,7 +129,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
       search: true,
     },
   } as VxeTableGridOptions<PayAppApi.App>,
-});
+} as any);
 </script>
 
 <template>

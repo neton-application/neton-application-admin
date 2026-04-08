@@ -9,7 +9,7 @@ import { fenToYuan, yuanToFen } from '@vben/utils';
 import { Card, message } from 'ant-design-vue';
 
 import { useVbenForm } from '#/adapter/form';
-import { getConfig, saveConfig } from '#/api/member/config';
+import { getConfig, updateConfig } from '#/api/member/config';
 import { $t } from '#/locales';
 
 import { schema } from './data';
@@ -35,7 +35,7 @@ async function handleSubmit() {
   const data = (await formApi.getValues()) as MemberConfigApi.Config;
   // 转换金额单位
   data.pointTradeDeductUnitPrice = yuanToFen(data.pointTradeDeductUnitPrice);
-  await saveConfig(data);
+  await updateConfig(data);
   // 关闭并提示
   message.success($t('ui.actionMessage.operationSuccess'));
 }

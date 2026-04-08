@@ -21,7 +21,7 @@ function handleDetail(row: SystemSocialUserApi.SocialUser) {
   detailModalApi.setData(row).open();
 }
 
-const [Grid] = useVbenVxeGrid({
+const [Grid] = useVbenVxeGrid<any>({
   formOptions: {
     schema: useGridFormSchema(),
   },
@@ -49,7 +49,7 @@ const [Grid] = useVbenVxeGrid({
       search: true,
     },
   } as VxeTableGridOptions<SystemSocialUserApi.SocialUser>,
-});
+} as any);
 </script>
 
 <template>

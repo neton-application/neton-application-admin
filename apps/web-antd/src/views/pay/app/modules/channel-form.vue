@@ -10,7 +10,11 @@ import { $t } from '@vben/locales';
 import { message } from 'ant-design-vue';
 
 import { useVbenForm } from '#/adapter/form';
-import { createChannel, getChannel, updateChannel } from '#/api/pay/channel';
+import {
+  createChannel,
+  getChannelByAppAndCode,
+  updateChannel,
+} from '#/api/pay/channel';
 
 import { useChannelFormSchema } from '../data';
 
@@ -116,7 +120,7 @@ const [Modal, modalApi] = useVbenModal({
     }
 
     try {
-      const res = await getChannel(appId, code);
+      const res = await getChannelByAppAndCode(appId, code);
       if (res) {
         formData.value = {
           ...res,

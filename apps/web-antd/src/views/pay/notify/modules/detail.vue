@@ -22,7 +22,7 @@ const [Description] = useDescription({
   schema: useDetailSchema(),
 });
 
-const [LogGrid, logGridApi] = useVbenVxeGrid({
+const [LogGrid, logGridApi] = useVbenVxeGrid<any>({
   gridOptions: {
     columns: useDetailLogColumns(),
     height: 'auto',
@@ -39,7 +39,7 @@ const [LogGrid, logGridApi] = useVbenVxeGrid({
       refresh: true,
     },
   } as VxeTableGridOptions,
-});
+} as any);
 
 const [Modal, modalApi] = useVbenModal({
   async onOpenChange(isOpen: boolean) {

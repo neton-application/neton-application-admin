@@ -1,23 +1,31 @@
 <script lang="ts" setup>
 import type { ChargeRecordApi } from '#/api/platform/chargerecord';
 
-import { ref, h, reactive, onMounted, nextTick } from 'vue';
+import { h, onMounted, reactive, ref } from 'vue';
 
 import { Page, useVbenModal } from '@vben/common-ui';
 import { DICT_TYPE } from '@vben/constants';
 import { getDictOptions } from '@vben/hooks';
 import { useTableToolbar, VbenVxeTableToolbar } from '@vben/plugins/vxe-table';
-import { cloneDeep, downloadFileFromBlobPart, formatDateTime, isEmpty } from '@vben/utils';
-import { Button, Card, message, Tabs, Pagination, Form, RangePicker, DatePicker, Select, Input } from 'ant-design-vue';
-import ChargeRecordForm from './modules/form.vue';
-import { Download, Plus, RefreshCw, Search, Trash2 } from '@vben/icons';
+import {
+  cloneDeep,
+  downloadFileFromBlobPart,
+  formatDateTime,
+} from '@vben/utils';
+import { Download } from '@vben/icons';
+import { Button, Card, Form, Input, message, Pagination, RangePicker, Select } from 'ant-design-vue';
+
 import { DictTag } from '#/components/dict-tag';
 import { VxeColumn, VxeTable } from '#/adapter/vxe-table';
+import {
+  deleteChargeRecord,
+  exportChargeRecord,
+  getChargeRecordPage,
+} from '#/api/platform/chargerecord';
+import { $t } from '#/locales';
 import { getRangePickerDefaultProps } from '#/utils/rangePickerProps';
 
-
-import { $t } from '#/locales';
-import { getChargeRecordPage, deleteChargeRecord, deleteChargeRecordList, exportChargeRecord } from '#/api/platform/chargerecord';
+import ChargeRecordForm from './modules/form.vue';
 
 
 const loading = ref(true) // 列表的加载中
@@ -69,11 +77,6 @@ const [FormModal, formModalApi] = useVbenModal({
   destroyOnClose: true,
 });
 
-/** 创建开放平台计费记录 */
-function handleCreate() {
-  formModalApi.setData(null).open();
-}
-
 /** 编辑开放平台计费记录 */
 function handleEdit(row: ChargeRecordApi.ChargeRecord) {
   formModalApi.setData(row).open();
@@ -89,22 +92,6 @@ async function handleDelete(row: ChargeRecordApi.ChargeRecord) {
   try {
     await deleteChargeRecord(row.id!);
     message.success($t('ui.actionMessage.deleteSuccess', [row.id]));
-    await getList();
-  } finally {
-    hideLoading();
-  }
-}
-
-/** 批量删除开放平台计费记录 */
-async function handleDeleteBatch() {
-  const hideLoading = message.loading({
-    content: $t('ui.actionMessage.deleting'),
-    duration: 0,
-  });
-  try {
-    await deleteChargeRecordList(checkedIds.value);
-    checkedIds.value = [];
-    message.success($t('ui.actionMessage.deleteSuccess'));
     await getList();
   } finally {
     hideLoading();
@@ -133,7 +120,7 @@ try {
 
 
 /** 初始化 */
-const { hiddenSearchBar, tableToolbarRef, tableRef } = useTableToolbar();
+const { hiddenSearchBar } = useTableToolbar();
 onMounted(() => {
   getList();
 });
@@ -186,7 +173,7 @@ onMounted(() => {
                       >
                             <Select.Option
                                 v-for="dict in getDictOptions(DICT_TYPE.PLATFORM_BOOL, 'number')"
-                                :key="dict.value"
+                                :key="String(dict.value)"
                                 :value="dict.value"
                             >
                               {{ dict.label }}
@@ -213,7 +200,6 @@ onMounted(() => {
     <Card title="开放平台计费记录">
       <template #extra>
         <VbenVxeTableToolbar
-            ref="tableToolbarRef"
             v-model:hidden-search="hiddenSearchBar"
         >
           <!-- <Button
@@ -249,7 +235,6 @@ onMounted(() => {
         </VbenVxeTableToolbar>
       </template>
       <VxeTable
-          ref="tableRef"
           :data="list"
           show-overflow
           :loading="loading"

@@ -10,7 +10,7 @@ const props = defineProps<{
   walletId: number | undefined;
 }>();
 
-const [Grid] = useVbenVxeGrid({
+const [Grid] = useVbenVxeGrid<WalletTransactionApi.Transaction>({
   gridOptions: {
     columns: useTransactionGridColumns(),
     keepSource: true,
@@ -35,7 +35,7 @@ const [Grid] = useVbenVxeGrid({
       search: true,
     },
   } as VxeTableGridOptions<WalletTransactionApi.Transaction>,
-});
+} as any);
 </script>
 
 <template>

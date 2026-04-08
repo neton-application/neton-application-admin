@@ -28,7 +28,7 @@ function handleDetail(row: SystemMailLogApi.MailLog) {
   detailModalApi.setData(row).open();
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<any>({
   formOptions: {
     schema: useGridFormSchema(),
   },
@@ -56,7 +56,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
       search: true,
     },
   } as VxeTableGridOptions<SystemMailLogApi.MailLog>,
-});
+} as any);
 </script>
 <template>
   <Page auto-content-height>

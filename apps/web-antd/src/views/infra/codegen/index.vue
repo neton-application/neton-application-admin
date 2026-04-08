@@ -145,7 +145,7 @@ async function handleGenerate(row: InfraCodegenApi.CodegenTable) {
   }
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<InfraCodegenApi.CodegenTable>({
   formOptions: {
     schema: useGridFormSchema(),
   },
@@ -177,7 +177,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
     checkboxAll: handleRowCheckboxChange,
     checkboxChange: handleRowCheckboxChange,
   },
-});
+} as any);
 
 /** 获取数据源配置列表 */
 // TODO Neton：这种场景的最佳实践；

@@ -48,7 +48,7 @@ async function handleDelete(row: MemberLevelApi.Level) {
   }
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<MemberLevelApi.Level>({
   formOptions: {
     schema: useGridFormSchema(),
   },
@@ -77,7 +77,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
       search: true,
     },
   } as VxeTableGridOptions<MemberLevelApi.Level>,
-});
+} as any);
 </script>
 
 <template>

@@ -36,7 +36,7 @@ export const useAuthStore = defineStore('auth', () => {
    * @param onSuccess 登录成功后的回调函数
    */
   async function authLogin(
-    type: 'mobile' | 'social' | 'username',
+    type: 'mobile' | 'register' | 'social' | 'username',
     params: Recordable<any>,
     onSuccess?: () => Promise<void> | void,
   ) {

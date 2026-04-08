@@ -10,7 +10,10 @@ import { message } from 'ant-design-vue';
 
 import { useVbenForm } from '#/adapter/form';
 import { getUser } from '#/api/member/user';
-import { getWallet, updateWalletBalance } from '#/api/pay/wallet/balance';
+import {
+  getWalletByUserId,
+  updateWalletBalance,
+} from '#/api/pay/wallet/balance';
 import { $t } from '#/locales';
 
 import { useBalanceFormSchema } from '../data';
@@ -74,7 +77,7 @@ const [Modal, modalApi] = useVbenModal({
       if (!user || !user.id) {
         return;
       }
-      const wallet = await getWallet({ userId: user.id });
+      const wallet = await getWalletByUserId({ userId: user.id });
       formData.value.id = user.id;
       formData.value.nickname = user.nickname || '';
       formData.value.balance = fenToYuan(wallet.balance);

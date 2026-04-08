@@ -2,7 +2,6 @@
 import type { VbenFormSchema } from '@vben/common-ui';
 
 import { computed, ref } from 'vue';
-import { useRoute } from 'vue-router';
 
 import { AuthenticationLogin, Verification, z } from '@vben/common-ui';
 import { isCaptchaEnable } from '@vben/hooks';
@@ -16,7 +15,6 @@ import { useAuthStore } from '#/store';
 
 defineOptions({ name: 'Login' });
 
-const { query } = useRoute();
 const authStore = useAuthStore();
 const captchaEnable = isCaptchaEnable();
 

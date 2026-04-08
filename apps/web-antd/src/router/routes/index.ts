@@ -40,6 +40,12 @@ const componentKeys: string[] = Object.keys(
   import.meta.glob('../../views/**/*.vue'),
 )
   .filter((item) => !item.includes('/modules/'))
+  .filter(
+    (item) =>
+      !item.includes('/mall/') &&
+      !item.includes('/report/') &&
+      !item.includes('/infra/demo/'),
+  )
   .map((v) => {
     const path = v.replace('../../views/', '/');
     return path.endsWith('.vue') ? path.slice(0, -4) : path;

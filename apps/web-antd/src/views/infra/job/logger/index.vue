@@ -32,7 +32,7 @@ function handleDetail(row: InfraJobLogApi.JobLog) {
   detailModalApi.setData({ id: row.id }).open();
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<InfraJobLogApi.JobLog>({
   formOptions: {
     schema: useGridFormSchema(),
   },
@@ -61,7 +61,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
       search: true,
     },
   } as VxeTableGridOptions<InfraJobLogApi.JobLog>,
-});
+} as any);
 </script>
 
 <template>

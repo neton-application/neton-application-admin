@@ -115,7 +115,7 @@ function useGridColumns(): VxeGridProps['columns'] {
   ];
 }
 
-const [Grid] = useVbenVxeGrid({
+const [Grid] = useVbenVxeGrid<MemberExperienceRecordApi.ExperienceRecord>({
   formOptions: {
     schema: useGridFormSchema(),
   },
@@ -143,7 +143,7 @@ const [Grid] = useVbenVxeGrid({
       search: true,
     },
   } as VxeTableGridOptions<MemberExperienceRecordApi.ExperienceRecord>,
-});
+} as any);
 </script>
 
 <template>

@@ -58,9 +58,8 @@ export function exportJob(params: any) {
 
 /** 任务状态修改 */
 export function updateJobStatus(id: number, status: number) {
-  return requestClient.put('/infra/job/update-status', undefined, {
+  return requestClient.put(`/infra/job/update-status/${id}`, undefined, {
     params: {
-      id,
       status,
     },
   });

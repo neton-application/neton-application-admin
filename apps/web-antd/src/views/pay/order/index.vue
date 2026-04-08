@@ -35,7 +35,7 @@ function handleDetail(row: PayOrderApi.Order) {
   detailModalApi.setData(row).open();
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<PayOrderApi.Order>({
   formOptions: {
     schema: useGridFormSchema(),
   },
@@ -66,7 +66,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
       search: true,
     },
   } as VxeTableGridOptions<PayOrderApi.Order>,
-});
+} as any);
 </script>
 
 <template>

@@ -33,7 +33,7 @@ function handleDetail(row: SystemOperateLogApi.OperateLog) {
   detailModalApi.setData(row).open();
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<any>({
   formOptions: {
     schema: useGridFormSchema(),
   },
@@ -61,7 +61,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
       search: true,
     },
   } as VxeTableGridOptions<SystemOperateLogApi.OperateLog>,
-});
+} as any);
 </script>
 
 <template>

@@ -54,7 +54,7 @@ const columns = [
   },
 ];
 
-const [Grid] = useVbenVxeGrid({
+const [Grid] = useVbenVxeGrid<MemberAddressApi.Address>({
   gridOptions: {
     columns,
     keepSource: true,
@@ -79,7 +79,7 @@ const [Grid] = useVbenVxeGrid({
       search: true,
     },
   } as VxeTableGridOptions<MemberAddressApi.Address>,
-});
+} as any);
 </script>
 
 <template>

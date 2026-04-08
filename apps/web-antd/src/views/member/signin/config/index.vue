@@ -51,7 +51,7 @@ async function handleDelete(row: MemberSignInConfigApi.SignInConfig) {
   }
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<MemberSignInConfigApi.SignInConfig>({
   gridOptions: {
     columns: useGridColumns(),
     height: 'auto',
@@ -75,7 +75,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
       search: true,
     },
   } as VxeTableGridOptions<MemberSignInConfigApi.SignInConfig>,
-});
+} as any);
 </script>
 
 <template>

@@ -46,7 +46,7 @@ async function handleTransfer(row: DemoWithdrawApi.Withdraw) {
   }
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<DemoWithdrawApi.Withdraw>({
   gridOptions: {
     columns: useGridColumns(),
     height: 'auto',
@@ -71,7 +71,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
       search: true,
     },
   } as VxeTableGridOptions<DemoWithdrawApi.Withdraw>,
-});
+} as any);
 </script>
 
 <template>

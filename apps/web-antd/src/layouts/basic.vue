@@ -1,10 +1,7 @@
 <script lang="ts" setup>
 import type { NotificationItem } from '@vben/layouts';
-
-
 import { computed, onMounted, ref, watch } from 'vue';
 
-import { useAccess } from '@vben/access';
 import { AuthenticationLoginExpiredModal, useVbenModal } from '@vben/common-ui';
 import { VBEN_DOC_URL, VBEN_GITHUB_URL } from '@vben/constants';
 import { useTabs, useWatermark } from '@vben/hooks';
@@ -25,8 +22,6 @@ import { preferences } from '@vben/preferences';
 import { useAccessStore, useUserStore } from '@vben/stores';
 import { formatDateTime, openWindow } from '@vben/utils';
 
-import { message } from 'ant-design-vue';
-
 import {
   getUnreadNotifyMessageCount,
   getUnreadNotifyMessageList,
@@ -41,9 +36,8 @@ import LoginForm from '#/views/_core/authentication/login.vue';
 const userStore = useUserStore();
 const authStore = useAuthStore();
 const accessStore = useAccessStore();
-const { hasAccessByCodes } = useAccess();
 const { destroyWatermark, updateWatermark } = useWatermark();
-const { closeOtherTabs, refreshTab } = useTabs();
+useTabs();
 
 const notifications = ref<NotificationItem[]>([]);
 const unreadCount = ref(0);

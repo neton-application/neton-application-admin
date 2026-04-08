@@ -26,7 +26,7 @@ function handleDetail(row: Required<PayWalletApi.Wallet>) {
   detailModalApi.setData(row).open();
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<PayWalletApi.Wallet>({
   formOptions: {
     schema: useGridFormSchema(),
   },
@@ -54,7 +54,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
       search: true,
     },
   } as VxeTableGridOptions<PayWalletApi.Wallet>,
-});
+} as any);
 </script>
 
 <template>

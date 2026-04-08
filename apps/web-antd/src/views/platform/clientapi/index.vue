@@ -1,23 +1,32 @@
 <script lang="ts" setup>
 import type { ClientApiApi } from '#/api/platform/clientapi';
 
-import { ref, h, reactive, onMounted, nextTick } from 'vue';
+import { h, onMounted, reactive, ref } from 'vue';
 
 import { Page, useVbenModal } from '@vben/common-ui';
 import { DICT_TYPE } from '@vben/constants';
 import { getDictOptions } from '@vben/hooks';
 import { useTableToolbar, VbenVxeTableToolbar } from '@vben/plugins/vxe-table';
-import { cloneDeep, downloadFileFromBlobPart, formatDateTime, isEmpty } from '@vben/utils';
-import { Button, Card, message, Tabs, Pagination, Form, RangePicker, DatePicker, Select, Input } from 'ant-design-vue';
-import ClientApiForm from './modules/form.vue';
-import { Download, Plus, RefreshCw, Search, Trash2 } from '@vben/icons';
+import {
+  cloneDeep,
+  downloadFileFromBlobPart,
+  formatDateTime,
+  isEmpty,
+} from '@vben/utils';
+import { Download, Plus, Trash2 } from '@vben/icons';
+import { Button, Card, Form, Input, message, Pagination, Select } from 'ant-design-vue';
+
 import { DictTag } from '#/components/dict-tag';
 import { VxeColumn, VxeTable } from '#/adapter/vxe-table';
-import { getRangePickerDefaultProps } from '#/utils/rangePickerProps';
-
-
+import {
+  deleteClientApi,
+  deleteClientApiList,
+  exportClientApi,
+  getClientApiPage,
+} from '#/api/platform/clientapi';
 import { $t } from '#/locales';
-import { getClientApiPage, deleteClientApi, deleteClientApiList, exportClientApi } from '#/api/platform/clientapi';
+
+import ClientApiForm from './modules/form.vue';
 
 
 const loading = ref(true) // 列表的加载中
@@ -128,7 +137,7 @@ try {
 
 
 /** 初始化 */
-const { hiddenSearchBar, tableToolbarRef, tableRef } = useTableToolbar();
+const { hiddenSearchBar } = useTableToolbar();
 onMounted(() => {
   getList();
 });
@@ -172,7 +181,7 @@ onMounted(() => {
                       >
                             <Select.Option
                                 v-for="dict in getDictOptions(DICT_TYPE.PLATFORM_BOOL, 'number')"
-                                :key="dict.value"
+                                :key="String(dict.value)"
                                 :value="dict.value"
                             >
                               {{ dict.label }}
@@ -192,7 +201,6 @@ onMounted(() => {
     <Card title="客户端-API授权关系表（含自定义定价）">
       <template #extra>
         <VbenVxeTableToolbar
-            ref="tableToolbarRef"
             v-model:hidden-search="hiddenSearchBar"
         >
           <Button
@@ -228,7 +236,6 @@ onMounted(() => {
         </VbenVxeTableToolbar>
       </template>
       <VxeTable
-          ref="tableRef"
           :data="list"
           show-overflow
           :loading="loading"

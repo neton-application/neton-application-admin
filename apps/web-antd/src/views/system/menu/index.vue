@@ -64,7 +64,7 @@ function handleExpand() {
   gridApi.grid.setAllTreeExpand(isExpanded.value);
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<any>({
   gridOptions: {
     columns: useGridColumns(),
     height: 'auto',
@@ -93,7 +93,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
       reserve: true,
     },
   } as VxeTableGridOptions<SystemMenuApi.Menu>,
-});
+} as any);
 </script>
 
 <template>

@@ -24,7 +24,7 @@ function handleQueryIp() {
   formModalApi.setData(null).open();
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<any>({
   gridOptions: {
     columns: useGridColumns(),
     height: 'auto',
@@ -51,7 +51,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
       reserve: true,
     },
   } as VxeTableGridOptions,
-});
+} as any);
 </script>
 
 <template>

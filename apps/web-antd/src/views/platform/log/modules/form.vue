@@ -5,13 +5,11 @@ import type { LogApi } from '#/api/platform/log';
 import { computed, ref } from 'vue';
 
 import { useVbenModal } from '@vben/common-ui';
-import { getDictOptions } from '@vben/hooks';
-import { Tinymce as RichTextarea } from '#/components/tinymce';
-import { ImageUpload, FileUpload } from "#/components/upload";
-import { message, Tabs, Form, Input, Textarea, Select, RadioGroup, Radio, CheckboxGroup, Checkbox, DatePicker, TreeSelect } from 'ant-design-vue';
+import { message } from 'ant-design-vue';
+import { DatePicker, Form, Input, Radio, RadioGroup } from 'ant-design-vue';
 
+import { createLog, getLog, updateLog } from '#/api/platform/log';
 import { $t } from '#/locales';
-import { getLog, createLog, updateLog } from '#/api/platform/log';
 
 const emit = defineEmits(['success']);
 

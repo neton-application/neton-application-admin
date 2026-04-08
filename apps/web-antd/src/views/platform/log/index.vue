@@ -1,22 +1,24 @@
 <script lang="ts" setup>
 import type { LogApi } from '#/api/platform/log';
 
-import { ref, h, reactive, onMounted, nextTick } from 'vue';
+import { h, onMounted, reactive, ref } from 'vue';
 
 import { Page, useVbenModal } from '@vben/common-ui';
-import { getDictOptions } from '@vben/hooks';
 import { useTableToolbar, VbenVxeTableToolbar } from '@vben/plugins/vxe-table';
-import { cloneDeep, downloadFileFromBlobPart, formatDateTime, isEmpty } from '@vben/utils';
-import { Button, Card, message, Tabs, Pagination, Form, RangePicker, DatePicker, Select, Input } from 'ant-design-vue';
-import LogForm from './modules/form.vue';
-import { Download, Plus, RefreshCw, Search, Trash2 } from '@vben/icons';
-import { DictTag } from '#/components/dict-tag';
+import {
+  cloneDeep,
+  downloadFileFromBlobPart,
+  formatDateTime,
+  isEmpty,
+} from '@vben/utils';
+import { Download, Plus, Trash2 } from '@vben/icons';
+import { Button, Card, Form, Input, message, Pagination, Select } from 'ant-design-vue';
+
 import { VxeColumn, VxeTable } from '#/adapter/vxe-table';
-import { getRangePickerDefaultProps } from '#/utils/rangePickerProps';
-
-
+import { deleteLog, deleteLogList, exportLog, getLogPage } from '#/api/platform/log';
 import { $t } from '#/locales';
-import { getLogPage, deleteLog, deleteLogList, exportLog } from '#/api/platform/log';
+
+import LogForm from './modules/form.vue';
 
 
 const loading = ref(true) // 列表的加载中
@@ -128,7 +130,7 @@ try {
 
 
 /** 初始化 */
-const { hiddenSearchBar, tableToolbarRef, tableRef } = useTableToolbar();
+const { hiddenSearchBar } = useTableToolbar();
 onMounted(() => {
   getList();
 });
@@ -195,7 +197,6 @@ onMounted(() => {
     <Card title="开放平台调用日志">
       <template #extra>
         <VbenVxeTableToolbar
-            ref="tableToolbarRef"
             v-model:hidden-search="hiddenSearchBar"
         >
           <Button
@@ -231,7 +232,6 @@ onMounted(() => {
         </VbenVxeTableToolbar>
       </template>
       <VxeTable
-          ref="tableRef"
           :data="list"
           show-overflow
           :loading="loading"

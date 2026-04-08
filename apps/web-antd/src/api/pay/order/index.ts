@@ -49,9 +49,8 @@ export function getOrderPage(params: PageParam) {
 
 /** 查询支付订单详情 */
 export function getOrder(id: number, sync?: boolean) {
-  return requestClient.get<PayOrderApi.Order>('/pay/order/get', {
+  return requestClient.get<PayOrderApi.Order>(`/pay/order/get/${id}`, {
     params: {
-      id,
       sync,
     },
   });

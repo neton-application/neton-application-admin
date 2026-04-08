@@ -58,7 +58,7 @@ async function handleProcess(id: number, processStatus: number) {
   }
 }
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid, gridApi] = useVbenVxeGrid<InfraApiErrorLogApi.ApiErrorLog>({
   formOptions: {
     schema: useGridFormSchema(),
   },
@@ -86,7 +86,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
       search: true,
     },
   } as VxeTableGridOptions<InfraApiErrorLogApi.ApiErrorLog>,
-});
+} as any);
 </script>
 
 <template>
