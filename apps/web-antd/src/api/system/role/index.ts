@@ -8,12 +8,19 @@ export namespace SystemRoleApi {
     id?: number;
     name: string;
     code: string;
-    sort: number;
     status: number;
-    type: number;
-    dataScope: number;
-    dataScopeDeptIds: number[];
-    createTime?: Date;
+    description?: string;
+    sort?: number;
+    createTime?: Date | string;
+  }
+
+  export interface RoleRequest {
+    id?: number;
+    name: string;
+    code: string;
+    description?: string;
+    sort?: number;
+    status: number;
   }
 }
 
@@ -36,12 +43,12 @@ export function getRole(id: number) {
 }
 
 /** 新增角色 */
-export function createRole(data: SystemRoleApi.Role) {
+export function createRole(data: SystemRoleApi.RoleRequest) {
   return requestClient.post('/system/role/create', data);
 }
 
 /** 修改角色 */
-export function updateRole(data: SystemRoleApi.Role) {
+export function updateRole(data: SystemRoleApi.RoleRequest) {
   return requestClient.put('/system/role/update', data);
 }
 

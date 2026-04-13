@@ -10,9 +10,15 @@ export namespace SystemPostApi {
     code: string;
     sort: number;
     status: number;
-    remark: string;
-    createTime?: Date;
+    createTime?: Date | string;
   }
+
+  export type PostRequest = Pick<
+    Post,
+    'code' | 'name' | 'sort' | 'status'
+  > & {
+    id?: number;
+  };
 }
 
 /** 查询岗位列表 */
@@ -36,12 +42,12 @@ export function getPost(id: number) {
 }
 
 /** 新增岗位 */
-export function createPost(data: SystemPostApi.Post) {
+export function createPost(data: SystemPostApi.PostRequest) {
   return requestClient.post('/system/post/create', data);
 }
 
 /** 修改岗位 */
-export function updatePost(data: SystemPostApi.Post) {
+export function updatePost(data: SystemPostApi.PostRequest) {
   return requestClient.put('/system/post/update', data);
 }
 

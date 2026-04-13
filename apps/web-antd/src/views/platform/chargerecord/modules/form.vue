@@ -5,98 +5,84 @@ import type { ChargeRecordApi } from '#/api/platform/chargerecord';
 import { computed, ref } from 'vue';
 
 import { useVbenModal } from '@vben/common-ui';
-import { DICT_TYPE } from '@vben/constants';
-import { getDictOptions } from '@vben/hooks';
 import { message } from 'ant-design-vue';
-import { DatePicker, Form, Input, Radio, RadioGroup, Select } from 'ant-design-vue';
+import { Form, Input, InputNumber } from 'ant-design-vue';
 
 import {
   createChargeRecord,
   getChargeRecord,
-  updateChargeRecord,
 } from '#/api/platform/chargerecord';
 import { $t } from '#/locales';
 
 const emit = defineEmits(['success']);
 
 const formRef = ref();
-const formData = ref<Partial<ChargeRecordApi.ChargeRecord>>({
-        id: undefined,
-        clientId: undefined,
-        apiId: undefined,
-        traceId: undefined,
-        chargeType: undefined,
-        price: undefined,
-        isCustomPrice: undefined,
-        balanceBefore: undefined,
-        balanceAfter: undefined,
-        chargeStatus: undefined,
-        failureReason: undefined,
-        chargeTime: undefined,
+const formData = ref<Partial<ChargeRecordApi.ChargeRecordRequest & { id?: number }>>({
+  id: undefined,
+  clientId: undefined,
+  apiId: undefined,
+  orderId: undefined,
+  apiCode: undefined,
+  price: undefined,
+  amount: undefined,
+  status: undefined,
 });
+
 const rules: Record<string, Rule[]> = {
-        clientId: [{ required: true, message: '客户端ID不能为空', trigger: 'blur' }],
-        apiId: [{ required: true, message: 'API ID不能为空', trigger: 'blur' }],
-        traceId: [{ required: true, message: '请求跟踪ID（关联日志）不能为空', trigger: 'blur' }],
-        chargeType: [{ required: true, message: '计费类型不能为空', trigger: 'change' }],
-        price: [{ required: true, message: '本次计费金额（分）不能为空', trigger: 'blur' }],
-        isCustomPrice: [{ required: true, message: '是否使用自定义价格不能为空', trigger: 'blur' }],
-        balanceBefore: [{ required: true, message: '扣费前余额（分）不能为空', trigger: 'blur' }],
-        balanceAfter: [{ required: true, message: '扣费后余额（分）不能为空', trigger: 'blur' }],
-        chargeStatus: [{ required: true, message: '是否扣费成功不能为空', trigger: 'blur' }],
-        chargeTime: [{ required: true, message: '扣费时间不能为空', trigger: 'blur' }],
+  clientId: [{ required: true, message: '客户端ID不能为空', trigger: 'blur' }],
+  apiId: [{ required: true, message: 'API ID不能为空', trigger: 'blur' }],
 };
+
 const getTitle = computed(() => {
   return formData.value?.id
-    ? $t('ui.actionTitle.edit', ['开放平台计费记录'])
+    ? $t('ui.actionTitle.detail', ['开放平台计费记录'])
     : $t('ui.actionTitle.create', ['开放平台计费记录']);
 });
 
-
-/** 重置表单 */
 function resetForm() {
   formData.value = {
-            id: undefined,
-            clientId: undefined,
-            apiId: undefined,
-            traceId: undefined,
-            chargeType: undefined,
-            price: undefined,
-            isCustomPrice: undefined,
-            balanceBefore: undefined,
-            balanceAfter: undefined,
-            chargeStatus: undefined,
-            failureReason: undefined,
-            chargeTime: undefined,
+    id: undefined,
+    clientId: undefined,
+    apiId: undefined,
+    orderId: undefined,
+    apiCode: undefined,
+    price: undefined,
+    amount: undefined,
+    status: undefined,
   };
   formRef.value?.resetFields();
 }
 
-
 const [Modal, modalApi] = useVbenModal({
   async onConfirm() {
     await formRef.value?.validate();
-        modalApi.lock();
-    // 提交表单
-    const data = formData.value as ChargeRecordApi.ChargeRecord;
-        try {
-      await (formData.value?.id ? updateChargeRecord(data) : createChargeRecord(data));
-      // 关闭并提示
+    modalApi.lock();
+    try {
+      const data = formData.value;
+      if (!data.clientId || !data.apiId) {
+        return;
+      }
+      await createChargeRecord({
+        clientId: data.clientId,
+        apiId: data.apiId,
+        orderId: data.orderId,
+        apiCode: data.apiCode,
+        price: data.price,
+        amount: data.amount,
+        status: data.status,
+      });
       await modalApi.close();
       emit('success');
-      message.success({
-        content: $t('ui.actionMessage.operationSuccess'),
-      });
+      message.success({ content: $t('ui.actionMessage.operationSuccess') });
     } finally {
       modalApi.unlock();
     }
   },
   async onOpenChange(isOpen: boolean) {
     if (!isOpen) {
-      resetForm()
+      resetForm();
       return;
     }
-    // 加载数据
     let data = modalApi.getData<ChargeRecordApi.ChargeRecord>();
     if (!data) {
       return;
@@ -109,7 +95,16 @@ const [Modal, modalApi] = useVbenModal({
         modalApi.unlock();
       }
     }
-    formData.value = data;
+    formData.value = {
+      id: data.id,
+      clientId: data.clientId,
+      apiId: data.apiId,
+      orderId: data.orderId,
+      apiCode: data.apiCode,
+      price: data.price,
+      amount: data.amount,
+      status: data.status,
+    };
   },
 });
 </script>
@@ -123,67 +118,27 @@ const [Modal, modalApi] = useVbenModal({
       :label-col="{ span: 5 }"
       :wrapper-col="{ span: 18 }"
     >
-            <Form.Item label="客户端ID" name="clientId">
-              <Input v-model:value="formData.clientId" placeholder="请输入客户端ID" />
-            </Form.Item>
-            <Form.Item label="API ID" name="apiId">
-              <Input v-model:value="formData.apiId" placeholder="请输入API ID" />
-            </Form.Item>
-            <Form.Item label="请求跟踪ID（关联日志）" name="traceId">
-              <Input v-model:value="formData.traceId" placeholder="请输入请求跟踪ID（关联日志）" />
-            </Form.Item>
-            <Form.Item label="计费类型" name="chargeType">
-              <Select v-model:value="formData.chargeType" placeholder="请选择计费类型">
-                  <Select.Option
-                          v-for="dict in getDictOptions(DICT_TYPE.PLATFORM_CHARGE_TYPE, 'number')"
-                          :key="String(dict.value)"
-                          :value="dict.value"
-                  >
-                    {{ dict.label }}
-                  </Select.Option>
-              </Select>
-            </Form.Item>
-            <Form.Item label="本次计费金额（分）" name="price">
-              <Input v-model:value="formData.price" placeholder="请输入本次计费金额（分）" />
-            </Form.Item>
-            <Form.Item label="是否使用自定义价格" name="isCustomPrice">
-              <RadioGroup v-model:value="formData.isCustomPrice">
-                  <Radio
-                          v-for="dict in getDictOptions(DICT_TYPE.PLATFORM_BOOL, 'number')"
-                          :key="String(dict.value)"
-                          :value="dict.value"
-                  >
-                    {{ dict.label }}
-                  </Radio>
-              </RadioGroup>
-            </Form.Item>
-            <Form.Item label="扣费前余额（分）" name="balanceBefore">
-              <Input v-model:value="formData.balanceBefore" placeholder="请输入扣费前余额（分）" />
-            </Form.Item>
-            <Form.Item label="扣费后余额（分）" name="balanceAfter">
-              <Input v-model:value="formData.balanceAfter" placeholder="请输入扣费后余额（分）" />
-            </Form.Item>
-            <Form.Item label="是否扣费成功" name="chargeStatus">
-              <RadioGroup v-model:value="formData.chargeStatus">
-                  <Radio
-                          v-for="dict in getDictOptions(DICT_TYPE.PLATFORM_BOOL, 'number')"
-                          :key="String(dict.value)"
-                          :value="dict.value"
-                  >
-                    {{ dict.label }}
-                  </Radio>
-              </RadioGroup>
-            </Form.Item>
-            <Form.Item label="失败原因" name="failureReason">
-              <Input v-model:value="formData.failureReason" placeholder="请输入失败原因" />
-            </Form.Item>
-            <Form.Item label="扣费时间" name="chargeTime">
-              <DatePicker
-                      v-model:value="formData.chargeTime"
-                      valueFormat="x"
-                      placeholder="选择扣费时间"
-              />
-            </Form.Item>
+      <Form.Item label="客户端ID" name="clientId">
+        <InputNumber v-model:value="formData.clientId" class="w-full" placeholder="请输入客户端ID" />
+      </Form.Item>
+      <Form.Item label="API ID" name="apiId">
+        <InputNumber v-model:value="formData.apiId" class="w-full" placeholder="请输入API ID" />
+      </Form.Item>
+      <Form.Item label="订单号" name="orderId">
+        <Input v-model:value="formData.orderId" placeholder="请输入订单号" />
+      </Form.Item>
+      <Form.Item label="API 编码" name="apiCode">
+        <Input v-model:value="formData.apiCode" placeholder="请输入API 编码" />
+      </Form.Item>
+      <Form.Item label="计费金额(分)" name="price">
+        <InputNumber v-model:value="formData.price" class="w-full" placeholder="请输入计费金额" />
+      </Form.Item>
+      <Form.Item label="数量" name="amount">
+        <InputNumber v-model:value="formData.amount" class="w-full" placeholder="请输入数量" />
+      </Form.Item>
+      <Form.Item label="状态" name="status">
+        <InputNumber v-model:value="formData.status" class="w-full" placeholder="请输入状态" />
+      </Form.Item>
     </Form>
-      </Modal>
+  </Modal>
 </template>

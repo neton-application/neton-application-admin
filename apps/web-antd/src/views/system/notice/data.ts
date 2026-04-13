@@ -54,14 +54,6 @@ export function useFormSchema(): VbenFormSchema[] {
       },
       rules: z.number().default(CommonStatusEnum.ENABLE),
     },
-    {
-      fieldName: 'remark',
-      label: '备注',
-      component: 'Textarea',
-      componentProps: {
-        placeholder: '请输入备注',
-      },
-    },
   ];
 }
 
@@ -123,7 +115,7 @@ export function useGridColumns(): VxeTableGridOptions['columns'] {
       },
     },
     {
-      field: 'createTime',
+      field: 'createdAt',
       title: '创建时间',
       minWidth: 180,
       formatter: 'formatDateTime',

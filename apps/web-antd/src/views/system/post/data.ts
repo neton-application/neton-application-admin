@@ -56,14 +56,6 @@ export function useFormSchema(): VbenFormSchema[] {
       },
       rules: z.number().default(CommonStatusEnum.ENABLE),
     },
-    {
-      fieldName: 'remark',
-      label: '岗位备注',
-      component: 'Textarea',
-      componentProps: {
-        placeholder: '请输入岗位备注',
-      },
-    },
   ];
 }
 
@@ -126,11 +118,6 @@ export function useGridColumns(): VxeTableGridOptions['columns'] {
       minWidth: 100,
     },
     {
-      field: 'remark',
-      title: '岗位备注',
-      minWidth: 200,
-    },
-    {
       field: 'status',
       title: '岗位状态',
       minWidth: 100,
@@ -140,7 +127,7 @@ export function useGridColumns(): VxeTableGridOptions['columns'] {
       },
     },
     {
-      field: 'createTime',
+      field: 'createdAt',
       title: '创建时间',
       minWidth: 180,
       formatter: 'formatDateTime',

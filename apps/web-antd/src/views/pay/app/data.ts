@@ -9,7 +9,6 @@ import { getDictOptions } from '@vben/hooks';
 
 import { z } from '#/adapter/form';
 import { InputUpload } from '#/components/upload';
-import { getRangePickerDefaultProps } from '#/utils';
 
 /** 列表的搜索表单 */
 export function useGridFormSchema(): VbenFormSchema[] {
@@ -33,15 +32,6 @@ export function useGridFormSchema(): VbenFormSchema[] {
         allowClear: true,
       },
     },
-    {
-      fieldName: 'createTime',
-      label: '创建时间',
-      component: 'RangePicker',
-      componentProps: {
-        ...getRangePickerDefaultProps(),
-        clearable: true,
-      },
-    },
   ];
 }
 
@@ -54,20 +44,20 @@ export function useGridColumns(
 ): VxeTableGridOptions['columns'] {
   return [
     {
-      field: 'appKey',
-      title: '应用标识',
-      minWidth: 40,
-    },
-    {
       field: 'name',
       title: '应用名',
-      minWidth: 40,
+      minWidth: 140,
+    },
+    {
+      field: 'remark',
+      title: '备注',
+      minWidth: 180,
     },
     {
       field: 'status',
       title: '状态',
       align: 'center',
-      minWidth: 40,
+      minWidth: 80,
       cellRender: {
         attrs: { beforeChange: onStatusChange },
         name: 'CellSwitch',
@@ -78,96 +68,10 @@ export function useGridColumns(
       },
     },
     {
-      title: '支付宝配置',
-      children: [
-        {
-          title: 'APP',
-          slots: {
-            default: 'alipayAppConfig',
-          },
-        },
-        {
-          title: 'PC 网站',
-          slots: {
-            default: 'alipayPCConfig',
-          },
-        },
-        {
-          title: 'WAP 网站',
-          slots: {
-            default: 'alipayWAPConfig',
-          },
-          minWidth: 10,
-        },
-        {
-          title: '扫码',
-          slots: {
-            default: 'alipayQrConfig',
-          },
-        },
-        {
-          title: '条码',
-          slots: {
-            default: 'alipayBarConfig',
-          },
-        },
-      ],
-    },
-    {
-      title: '微信配置',
-      children: [
-        {
-          title: '小程序',
-          slots: {
-            default: 'wxLiteConfig',
-          },
-        },
-        {
-          title: 'JSAPI',
-          slots: {
-            default: 'wxPubConfig',
-          },
-        },
-        {
-          title: 'APP',
-          slots: {
-            default: 'wxAppConfig',
-          },
-        },
-        {
-          title: 'Native',
-          slots: {
-            default: 'wxNativeConfig',
-          },
-        },
-        {
-          title: 'WAP 网站',
-          slots: {
-            default: 'wxWapConfig',
-          },
-          minWidth: 10,
-        },
-        {
-          title: '条码',
-          slots: {
-            default: 'wxBarConfig',
-          },
-        },
-      ],
-    },
-    {
-      title: '钱包支付配置',
-      field: 'walletConfig',
-      slots: {
-        default: 'walletConfig',
-      },
-    },
-    {
-      title: '模拟支付配置',
-      field: 'mockConfig',
-      slots: {
-        default: 'mockConfig',
-      },
+      field: 'createTime',
+      title: '创建时间',
+      minWidth: 180,
+      formatter: 'formatDateTime',
     },
     {
       title: '操作',
@@ -199,15 +103,6 @@ export function useAppFormSchema(): VbenFormSchema[] {
       },
     },
     {
-      fieldName: 'appKey',
-      label: '应用标识',
-      component: 'Input',
-      rules: 'required',
-      componentProps: {
-        placeholder: '请输入应用标识',
-      },
-    },
-    {
       fieldName: 'status',
       label: '开启状态',
       component: 'RadioGroup',
@@ -216,32 +111,6 @@ export function useAppFormSchema(): VbenFormSchema[] {
         options: getDictOptions(DICT_TYPE.COMMON_STATUS, 'number'),
         buttonStyle: 'solid',
         optionType: 'button',
-      },
-    },
-    {
-      fieldName: 'orderNotifyUrl',
-      label: '支付结果的回调地址',
-      component: 'Input',
-      rules: 'required',
-      componentProps: {
-        placeholder: '请输入支付结果的回调地址',
-      },
-    },
-    {
-      fieldName: 'refundNotifyUrl',
-      label: '退款结果的回调地址',
-      component: 'Input',
-      rules: 'required',
-      componentProps: {
-        placeholder: '请输入退款结果的回调地址',
-      },
-    },
-    {
-      fieldName: 'transferNotifyUrl',
-      label: '转账结果的回调地址',
-      component: 'Input',
-      componentProps: {
-        placeholder: '请输入转账结果的回调地址',
       },
     },
     {

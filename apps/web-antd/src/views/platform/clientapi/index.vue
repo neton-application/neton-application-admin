@@ -10,7 +10,6 @@ import { useTableToolbar, VbenVxeTableToolbar } from '@vben/plugins/vxe-table';
 import {
   cloneDeep,
   downloadFileFromBlobPart,
-  formatDateTime,
   isEmpty,
 } from '@vben/utils';
 import { Download, Plus, Trash2 } from '@vben/icons';
@@ -251,29 +250,8 @@ onMounted(() => {
                         <dict-tag :type="DICT_TYPE.PLATFORM_BOOL" :value="row.status" />
                       </template>
                     </VxeColumn>
-                    <VxeColumn field="rateLimitPerMin" title="每分钟限流（覆盖 API 默认配置）" align="center" />
-                    <VxeColumn field="rateLimitPerDay" title="每日配额（覆盖客户端默认配置）" align="center" />
-                    <VxeColumn field="isCustomPrice" title="是否自定义价格" align="center">
-                      <template #default="{row}">
-                        <dict-tag :type="DICT_TYPE.PLATFORM_BOOL" :value="row.isCustomPrice" />
-                      </template>
-                    </VxeColumn>
-                    <VxeColumn field="customPrice" title="自定义价格（分，仅当 is_custom_price=1 时有效）" align="center" />
-                    <VxeColumn field="startTime" title="授权开始时间" align="center">
-                      <template #default="{row}">
-                        {{formatDateTime(row.startTime)}}
-                      </template>
-                    </VxeColumn>
-                    <VxeColumn field="endTime" title="授权结束时间（为空表示永久）" align="center">
-                      <template #default="{row}">
-                        {{formatDateTime(row.endTime)}}
-                      </template>
-                    </VxeColumn>
-                    <VxeColumn field="createTime" title="创建时间" align="center">
-                      <template #default="{row}">
-                        {{formatDateTime(row.createTime)}}
-                      </template>
-                    </VxeColumn>
+                    <VxeColumn field="customPrice" title="自定义价格（分）" align="center" />
+                    <VxeColumn field="createdAt" title="创建时间" align="center" />
         <VxeColumn field="operation" title="操作" align="center">
           <template #default="{row}">
             <Button

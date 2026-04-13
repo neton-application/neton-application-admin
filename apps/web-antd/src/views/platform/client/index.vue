@@ -44,15 +44,9 @@ const total = ref(0) // 列表的总页数
 const queryParams = reactive({
   pageNo: 1,
   pageSize: 10,
-                clientId: undefined,
-                clientName: undefined,
-                clientCode: undefined,
-                companyName: undefined,
-                businessLicense: undefined,
-                contactName: undefined,
-                contactEmail: undefined,
-                contactPhone: undefined,
-                status: undefined,
+  name: undefined,
+  appId: undefined,
+  status: undefined,
 })
 const queryFormRef = ref() // 搜索的表单
 const exportLoading = ref(false) // 导出的加载中
@@ -168,73 +162,19 @@ onMounted(() => {
           ref="queryFormRef"
           layout="inline"
       >
-                    <Form.Item label="客户端唯一标识（公开）" name="clientId">
+                    <Form.Item label="应用标识" name="appId">
                       <Input 
-                          v-model:value="queryParams.clientId"
-                          placeholder="请输入客户端唯一标识（公开）"
+                          v-model:value="queryParams.appId"
+                          placeholder="请输入应用标识"
                           allowClear
                           @pressEnter="handleQuery"
                            class="w-full"
                       />
                     </Form.Item>
-                    <Form.Item label="客户端名称" name="clientName">
+                    <Form.Item label="客户端名称" name="name">
                       <Input
-                          v-model:value="queryParams.clientName"
+                          v-model:value="queryParams.name"
                           placeholder="请输入客户端名称"
-                          allowClear
-                          @pressEnter="handleQuery"
-                           class="w-full"
-                      />
-                    </Form.Item>
-                    <Form.Item label="客户端编码（英文标识）" name="clientCode">
-                      <Input
-                          v-model:value="queryParams.clientCode"
-                          placeholder="请输入客户端编码（英文标识）"
-                          allowClear
-                          @pressEnter="handleQuery"
-                           class="w-full"
-                      />
-                    </Form.Item>
-                    <Form.Item label="公司名称" name="companyName">
-                      <Input
-                          v-model:value="queryParams.companyName"
-                          placeholder="请输入公司名称"
-                          allowClear
-                          @pressEnter="handleQuery"
-                           class="w-full"
-                      />
-                    </Form.Item>
-                    <Form.Item label="营业执照号" name="businessLicense">
-                      <Input
-                          v-model:value="queryParams.businessLicense"
-                          placeholder="请输入营业执照号"
-                          allowClear
-                          @pressEnter="handleQuery"
-                           class="w-full"
-                      />
-                    </Form.Item>
-                    <Form.Item label="联系人姓名" name="contactName">
-                      <Input
-                          v-model:value="queryParams.contactName"
-                          placeholder="请输入联系人姓名"
-                          allowClear
-                          @pressEnter="handleQuery"
-                           class="w-full"
-                      />
-                    </Form.Item>
-                    <Form.Item label="联系人邮箱" name="contactEmail">
-                      <Input
-                          v-model:value="queryParams.contactEmail"
-                          placeholder="请输入联系人邮箱"
-                          allowClear
-                          @pressEnter="handleQuery"
-                           class="w-full"
-                      />
-                    </Form.Item>
-                    <Form.Item label="联系人电话" name="contactPhone">
-                      <Input
-                          v-model:value="queryParams.contactPhone"
-                          placeholder="请输入联系人电话"
                           allowClear
                           @pressEnter="handleQuery"
                            class="w-full"
@@ -311,49 +251,20 @@ onMounted(() => {
           @checkboxChange="handleRowCheckboxChange"
       >
         <VxeColumn type="checkbox" width="40" />
-                    <VxeColumn field="clientLogo" title="客户端Logo" align="center" width="100" />
                     <VxeColumn field="id" title="客户端ID" align="center" width="120" />
-                    <VxeColumn field="clientId" title="客户端唯一标识（公开）" align="center" width="120" />
-                    <VxeColumn field="clientName" title="客户端名称" align="center" width="120" />
-                    <VxeColumn field="clientCode" title="客户端编码（英文标识）" align="center" width="120" />
-                    <VxeColumn field="description" title="客户端描述" align="center" width="120" />
-                    <VxeColumn field="companyName" title="公司名称" align="center" width="120" />
-                    <VxeColumn field="businessLicense" title="营业执照号" align="center" width="120" />
+                    <VxeColumn field="appId" title="应用标识" align="center" width="160" />
+                    <VxeColumn field="name" title="客户端名称" align="center" width="160" />
+                    <VxeColumn field="remark" title="备注" align="center" width="160" />
                     <VxeColumn field="contactName" title="联系人姓名" align="center" width="120" />
-                    <VxeColumn field="contactEmail" title="联系人邮箱" align="center" width="120" />
-                    <VxeColumn field="contactPhone" title="联系人电话" align="center" width="120" />
+                    <VxeColumn field="contactMobile" title="联系人手机号" align="center" width="120" />
                     <VxeColumn field="status" title="状态" align="center" width="120">
                       <template #default="{row}">
                         <dict-tag :type="DICT_TYPE.PLATFORM_CLIENT_STATUS" :value="row.status" />
                       </template>
                     </VxeColumn>
-                    <VxeColumn field="clientType" title="客户端类型" align="center" width="120">
+                    <VxeColumn field="createdAt" title="创建时间" align="center" width="160">
                       <template #default="{row}">
-                        <dict-tag :type="DICT_TYPE.PLATFORM_CLIENT_TYPE" :value="row.clientType" />
-                      </template>
-                    </VxeColumn>
-                    <VxeColumn field="rateLimitPerMin" title="每分钟频率限制（次/分钟）" align="center" width="120" />
-                    <VxeColumn field="rateLimitPerDay" title="每日调用配额" align="center" width="120" />
-                    <VxeColumn field="usedCountToday" title="今日已用次数" align="center" width="120" />
-                    <VxeColumn field="totalUsedCount" title="累计调用次数" align="center" width="120" />
-                    <VxeColumn field="balance" title="账户余额（分）" align="center" width="120" />
-                    <VxeColumn field="totalCharged" title="累计消费金额（分）" align="center" width="120" />
-                    <VxeColumn field="lowBalanceAlert" title="余额不足预警阈值（分，默认100元）" align="center" width="120" />
-                    <VxeColumn field="allowedIps" title="允许的IP白名单" align="center" width="120" />
-                    <VxeColumn field="webhookUrl" title="回调地址（接收平台通知）" align="center" width="120" />
-                    <VxeColumn field="expiredTime" title="过期时间（为空表示永久有效）" align="center" width="120">
-                      <template #default="{row}">
-                        {{formatDateTime(row.expiredTime)}}
-                      </template>
-                    </VxeColumn>
-                    <VxeColumn field="lastCallTime" title="最后调用时间" align="center" width="120">
-                      <template #default="{row}">
-                        {{formatDateTime(row.lastCallTime)}}
-                      </template>
-                    </VxeColumn>
-                    <VxeColumn field="createTime" title="创建时间" align="center" width="120">
-                      <template #default="{row}">
-                        {{formatDateTime(row.createTime)}}
+                        {{formatDateTime(row.createdAt)}}
                       </template>
                     </VxeColumn>
         <VxeColumn field="operation" title="操作" align="center" width="120">

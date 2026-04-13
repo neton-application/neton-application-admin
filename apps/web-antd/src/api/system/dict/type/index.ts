@@ -5,10 +5,18 @@ import { requestClient } from '#/api/request';
 export namespace SystemDictTypeApi {
   /** 字典类型 */
   export type DictType = {
-    createTime: Date;
+    createTime?: Date | string;
     id?: number;
     name: string;
-    remark: string;
+    remark?: string;
+    status: number;
+    type: string;
+  };
+
+  export type DictTypeRequest = {
+    id?: number;
+    name: string;
+    remark?: string;
     status: number;
     type: string;
   };
@@ -37,12 +45,12 @@ export function getDictType(id: number) {
 }
 
 // 新增字典
-export function createDictType(data: SystemDictTypeApi.DictType) {
+export function createDictType(data: SystemDictTypeApi.DictTypeRequest) {
   return requestClient.post('/system/dict-type/create', data);
 }
 
 // 修改字典
-export function updateDictType(data: SystemDictTypeApi.DictType) {
+export function updateDictType(data: SystemDictTypeApi.DictTypeRequest) {
   return requestClient.put('/system/dict-type/update', data);
 }
 

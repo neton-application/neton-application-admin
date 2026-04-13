@@ -5,19 +5,31 @@ export namespace SystemMenuApi {
   export interface Menu {
     id: number;
     name: string;
-    permission: string;
+    permission?: string;
     type: number;
-    sort: number;
     parentId: number;
-    path: string;
-    icon: string;
-    component: string;
-    componentName?: string;
+    path?: string;
+    icon?: string;
+    component?: string;
     status: number;
     visible: boolean;
     keepAlive: boolean;
-    alwaysShow?: boolean;
-    createTime: Date;
+    sort?: number;
+    children?: Menu[];
+    createTime?: Date | string;
+  }
+
+  export interface MenuRequest {
+    id?: number;
+    name: string;
+    permission?: string;
+    type: number;
+    parentId: number;
+    path?: string;
+    icon?: string;
+    component?: string;
+    status: number;
+    sort?: number;
   }
 }
 
@@ -39,12 +51,12 @@ export async function getMenu(id: number) {
 }
 
 /** 新增菜单 */
-export async function createMenu(data: SystemMenuApi.Menu) {
+export async function createMenu(data: SystemMenuApi.MenuRequest) {
   return requestClient.post('/system/menu/create', data);
 }
 
 /** 修改菜单 */
-export async function updateMenu(data: SystemMenuApi.Menu) {
+export async function updateMenu(data: SystemMenuApi.MenuRequest) {
   return requestClient.put('/system/menu/update', data);
 }
 

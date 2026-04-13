@@ -5,13 +5,12 @@ export namespace MemberLevelApi {
   export interface Level {
     id?: number;
     name: string;
+    level: number;
     experience: number;
-    value: number;
-    discountPercent: number;
-    icon: string;
-    bgUrl: string;
+    discount: number;
+    icon?: string;
     status: number;
-    createTime?: Date;
+    createTime?: Date | string;
   }
 }
 

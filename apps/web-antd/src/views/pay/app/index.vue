@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import type { ActionItem, VxeTableGridOptions } from '#/adapter/vxe-table';
+import type { VxeTableGridOptions } from '#/adapter/vxe-table';
 import type { PayAppApi } from '#/api/pay/app';
 
 import { confirm, Page, useVbenModal } from '@vben/common-ui';
-import { CommonStatusEnum, PayChannelEnum } from '@vben/constants';
+import { CommonStatusEnum } from '@vben/constants';
 
 import { message } from 'ant-design-vue';
 
@@ -83,24 +83,6 @@ async function handleStatusChange(
   });
 }
 
-/** 生成渠道配置按钮 */
-function createChannelConfigAction(
-  row: PayAppApi.App,
-  channelCode: string,
-): ActionItem[] {
-  const exists = row.channelCodes?.includes(channelCode);
-  return [
-    {
-      type: 'primary',
-      size: 'small',
-      icon: exists ? 'lucide:check' : 'lucide:x',
-      danger: !exists,
-      shape: 'circle',
-      onClick: handleChannelForm.bind(null, row, channelCode),
-    },
-  ];
-}
-
 const [Grid, gridApi] = useVbenVxeGrid<PayAppApi.App>({
   formOptions: {
     schema: useGridFormSchema(),
@@ -165,6 +147,13 @@ const [Grid, gridApi] = useVbenVxeGrid<PayAppApi.App>({
               onClick: handleEdit.bind(null, row),
             },
             {
+              label: '渠道配置',
+              type: 'link',
+              icon: 'lucide:settings-2',
+              auth: ['pay:channel:create', 'pay:channel:update'],
+              onClick: handleChannelForm.bind(null, row, 'mock'),
+            },
+            {
               label: $t('common.delete'),
               type: 'link',
               danger: true,
@@ -176,83 +165,6 @@ const [Grid, gridApi] = useVbenVxeGrid<PayAppApi.App>({
               },
             },
           ]"
-        />
-      </template>
-      <template #alipayAppConfig="{ row }">
-        <TableAction
-          :actions="
-            createChannelConfigAction(row, PayChannelEnum.ALIPAY_APP.code)
-          "
-        />
-      </template>
-      <template #alipayPCConfig="{ row }">
-        <TableAction
-          :actions="
-            createChannelConfigAction(row, PayChannelEnum.ALIPAY_PC.code)
-          "
-        />
-      </template>
-      <template #alipayWAPConfig="{ row }">
-        <TableAction
-          :actions="
-            createChannelConfigAction(row, PayChannelEnum.ALIPAY_WAP.code)
-          "
-        />
-      </template>
-      <template #alipayQrConfig="{ row }">
-        <TableAction
-          :actions="
-            createChannelConfigAction(row, PayChannelEnum.ALIPAY_QR.code)
-          "
-        />
-      </template>
-      <template #alipayBarConfig="{ row }">
-        <TableAction
-          :actions="
-            createChannelConfigAction(row, PayChannelEnum.ALIPAY_BAR.code)
-          "
-        />
-      </template>
-      <template #wxLiteConfig="{ row }">
-        <TableAction
-          :actions="createChannelConfigAction(row, PayChannelEnum.WX_LITE.code)"
-        />
-      </template>
-      <template #wxPubConfig="{ row }">
-        <TableAction
-          :actions="createChannelConfigAction(row, PayChannelEnum.WX_PUB.code)"
-        />
-      </template>
-      <template #wxAppConfig="{ row }">
-        <TableAction
-          :actions="createChannelConfigAction(row, PayChannelEnum.WX_APP.code)"
-        />
-      </template>
-      <template #wxNativeConfig="{ row }">
-        <TableAction
-          :actions="
-            createChannelConfigAction(row, PayChannelEnum.WX_NATIVE.code)
-          "
-        />
-      </template>
-      <template #wxWapConfig="{ row }">
-        <TableAction
-          :actions="createChannelConfigAction(row, PayChannelEnum.WX_WAP.code)"
-        />
-      </template>
-      <template #wxBarConfig="{ row }">
-        <TableAction
-          :actions="createChannelConfigAction(row, PayChannelEnum.WX_BAR.code)"
-        />
-      </template>
-      <template #walletConfig="{ row }">
-        <TableAction
-          :actions="createChannelConfigAction(row, PayChannelEnum.WALLET.code)"
-        />
-      </template>
-      <template #mockConfig="{ row }">
-        <TableAction
-          :actions="createChannelConfigAction(row, PayChannelEnum.MOCK.code)"
         />
       </template>
     </Grid>

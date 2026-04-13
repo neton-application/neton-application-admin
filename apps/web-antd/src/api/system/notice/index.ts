@@ -10,10 +10,16 @@ export namespace SystemNoticeApi {
     type: number;
     content: string;
     status: number;
-    remark: string;
-    creator?: string;
-    createTime?: Date;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
   }
+
+  export type NoticeRequest = Pick<
+    Notice,
+    'content' | 'status' | 'title' | 'type'
+  > & {
+    id?: number;
+  };
 }
 
 /** 查询公告列表 */
@@ -32,12 +38,12 @@ export function getNotice(id: number) {
 }
 
 /** 新增公告 */
-export function createNotice(data: SystemNoticeApi.Notice) {
+export function createNotice(data: SystemNoticeApi.NoticeRequest) {
   return requestClient.post('/system/notice/create', data);
 }
 
 /** 修改公告 */
-export function updateNotice(data: SystemNoticeApi.Notice) {
+export function updateNotice(data: SystemNoticeApi.NoticeRequest) {
   return requestClient.put('/system/notice/update', data);
 }
 

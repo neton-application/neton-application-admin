@@ -5,7 +5,6 @@ import { CommonStatusEnum, DICT_TYPE } from '@vben/constants';
 import { getDictOptions } from '@vben/hooks';
 
 import { z } from '#/adapter/form';
-import { getRangePickerDefaultProps } from '#/utils';
 
 /** 新增/修改的表单 */
 export function useFormSchema(): VbenFormSchema[] {
@@ -50,13 +49,13 @@ export function useFormSchema(): VbenFormSchema[] {
       rules: 'required',
     },
     {
-      fieldName: 'discountPercent',
-      label: '享受折扣(%)',
+      fieldName: 'discount',
+      label: '享受折扣',
       component: 'InputNumber',
       componentProps: {
         min: 0,
         max: 100,
-        precision: 0,
+        precision: 2,
         placeholder: '请输入享受折扣',
       },
       rules: 'required',
@@ -64,11 +63,6 @@ export function useFormSchema(): VbenFormSchema[] {
     {
       fieldName: 'icon',
       label: '等级图标',
-      component: 'ImageUpload',
-    },
-    {
-      fieldName: 'backgroundUrl',
-      label: '等级背景图',
       component: 'ImageUpload',
     },
     {
@@ -107,15 +101,6 @@ export function useGridFormSchema(): VbenFormSchema[] {
         options: getDictOptions(DICT_TYPE.COMMON_STATUS, 'number'),
       },
     },
-    {
-      fieldName: 'createTime',
-      label: '创建时间',
-      component: 'RangePicker',
-      componentProps: {
-        ...getRangePickerDefaultProps(),
-        allowClear: true,
-      },
-    },
   ];
 }
 
@@ -136,14 +121,6 @@ export function useGridColumns(): VxeTableGridOptions['columns'] {
       },
     },
     {
-      field: 'backgroundUrl',
-      title: '等级背景图',
-      minWidth: 120,
-      cellRender: {
-        name: 'CellImage',
-      },
-    },
-    {
       field: 'name',
       title: '等级名称',
       minWidth: 120,
@@ -159,8 +136,8 @@ export function useGridColumns(): VxeTableGridOptions['columns'] {
       minWidth: 100,
     },
     {
-      field: 'discountPercent',
-      title: '享受折扣(%)',
+      field: 'discount',
+      title: '享受折扣',
       minWidth: 120,
     },
     {

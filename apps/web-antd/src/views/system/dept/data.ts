@@ -81,25 +81,6 @@ export function useFormSchema(): VbenFormSchema[] {
       rules: z.number().optional(),
     },
     {
-      fieldName: 'phone',
-      label: '联系电话',
-      component: 'Input',
-      componentProps: {
-        maxLength: 11,
-        placeholder: '请输入联系电话',
-      },
-      rules: 'mobileRequired',
-    },
-    {
-      fieldName: 'email',
-      label: '邮箱',
-      component: 'Input',
-      componentProps: {
-        placeholder: '请输入邮箱',
-      },
-      rules: z.string().email('邮箱格式不正确').or(z.literal('')).optional(),
-    },
-    {
       fieldName: 'status',
       label: '状态',
       component: 'RadioGroup',
@@ -147,7 +128,7 @@ export function useGridColumns(): VxeTableGridOptions<SystemDeptApi.Dept>['colum
       },
     },
     {
-      field: 'createTime',
+      field: 'createdAt',
       title: '创建时间',
       minWidth: 180,
       formatter: 'formatDateTime',

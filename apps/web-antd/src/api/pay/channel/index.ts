@@ -3,14 +3,14 @@ import { requestClient } from '#/api/request';
 export namespace PayChannelApi {
   /** 支付渠道信息 */
   export interface Channel {
-    id: number;
+    id?: number;
     code: string;
     config: string;
     status: number;
-    remark: string;
+    remark?: string;
     feeRate: number;
     appId: number;
-    createTime: Date;
+    createTime?: Date | string;
   }
 }
 

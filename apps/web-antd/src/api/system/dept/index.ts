@@ -8,12 +8,17 @@ export namespace SystemDeptApi {
     parentId?: number;
     status: number;
     sort: number;
-    leaderUserId: number;
-    phone: string;
-    email: string;
-    createTime: Date;
+    leaderUserId?: number;
+    createTime?: Date | string;
     children?: Dept[];
   }
+
+  export type DeptRequest = Pick<
+    Dept,
+    'leaderUserId' | 'name' | 'parentId' | 'sort' | 'status'
+  > & {
+    id?: number;
+  };
 }
 
 /** 查询部门（精简)列表 */
@@ -32,12 +37,12 @@ export async function getDept(id: number) {
 }
 
 /** 新增部门 */
-export async function createDept(data: SystemDeptApi.Dept) {
+export async function createDept(data: SystemDeptApi.DeptRequest) {
   return requestClient.post('/system/dept/create', data);
 }
 
 /** 修改部门 */
-export async function updateDept(data: SystemDeptApi.Dept) {
+export async function updateDept(data: SystemDeptApi.DeptRequest) {
   return requestClient.put('/system/dept/update', data);
 }
 

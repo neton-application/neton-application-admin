@@ -6,19 +6,11 @@ export namespace PayAppApi {
   /** 支付应用信息 */
   export interface App {
     id?: number;
-    appKey: string;
     name: string;
     status: number;
-    remark: string;
-    payNotifyUrl: string;
-    refundNotifyUrl: string;
-    transferNotifyUrl: string;
-    merchantId: number;
-    merchantName: string;
-    createTime?: Date;
-    channelCodes?: string[];
+    remark?: string;
+    createTime?: Date | string;
   }
-
 }
 
 /** 查询支付应用列表 */

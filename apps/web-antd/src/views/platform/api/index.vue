@@ -21,7 +21,6 @@ import {
   Input,
   message,
   Pagination,
-  RangePicker,
   Select,
 } from 'ant-design-vue';
 
@@ -34,7 +33,6 @@ import {
   getApiPage,
 } from '#/api/platform/api';
 import { $t } from '#/locales';
-import { getRangePickerDefaultProps } from '#/utils/rangePickerProps';
 
 import ApiForm from './modules/form.vue';
 
@@ -46,12 +44,9 @@ const total = ref(0) // 列表的总页数
 const queryParams = reactive({
   pageNo: 1,
   pageSize: 10,
-                apiCode: undefined,
-                apiName: undefined,
-                category: undefined,
-                status: undefined,
-                isPublic: undefined,
-                createTime: undefined,
+  code: undefined,
+  name: undefined,
+  status: undefined,
 })
 const queryFormRef = ref() // 搜索的表单
 const exportLoading = ref(false) // 导出的加载中
@@ -61,10 +56,7 @@ async function getList() {
   loading.value = true
   try {
     const params = cloneDeep(queryParams) as any;
-                if (params.createTime && Array.isArray(params.createTime)) {
-                  params.createTime = (params.createTime as string[]).join(',');
-                }
-              const data = await getApiPage(params)
+    const data = await getApiPage(params)
         list.value = data.list
         total.value = data.total
   } finally {
@@ -170,28 +162,19 @@ onMounted(() => {
           ref="queryFormRef"
           layout="inline"
       >
-                    <Form.Item label="API 编码" name="apiCode">
+                    <Form.Item label="API 编码" name="code">
                       <Input
-                          v-model:value="queryParams.apiCode"
+                          v-model:value="queryParams.code"
                           placeholder="请输入API 编码"
                           allowClear
                           @pressEnter="handleQuery"
                            class="w-full"
                       />
                     </Form.Item>
-                    <Form.Item label="API 名称" name="apiName">
+                    <Form.Item label="API 名称" name="name">
                       <Input
-                          v-model:value="queryParams.apiName"
+                          v-model:value="queryParams.name"
                           placeholder="请输入API 名称"
-                          allowClear
-                          @pressEnter="handleQuery"
-                           class="w-full"
-                      />
-                    </Form.Item>
-                    <Form.Item label="API 分类" name="category">
-                      <Input
-                          v-model:value="queryParams.category"
-                          placeholder="请输入API 分类"
                           allowClear
                           @pressEnter="handleQuery"
                            class="w-full"
@@ -213,29 +196,6 @@ onMounted(() => {
                             </Select.Option>
                       </Select>
                     </Form.Item>
-                    <Form.Item label="是否公开" name="isPublic">
-                      <Select
-                          v-model:value="queryParams.isPublic"
-                          placeholder="请选择是否公开"
-                          allowClear
-                           class="w-full"
-                      >
-                            <Select.Option
-                                v-for="dict in getDictOptions(DICT_TYPE.PLATFORM_BOOL, 'number')"
-                                :key="dict.value"
-                                :value="dict.value"
-                            >
-                              {{ dict.label }}
-                            </Select.Option>
-                      </Select>
-                    </Form.Item>
-                        <Form.Item label="创建时间" name="createTime">
-                          <RangePicker
-                              v-model:value="queryParams.createTime"
-                              v-bind="getRangePickerDefaultProps()"
-                              class="w-full"
-                          />
-                        </Form.Item>
         <Form.Item>
           <Button class="ml-2" @click="resetQuery"> 重置 </Button>
           <Button class="ml-2" @click="handleQuery" type="primary">
@@ -292,15 +252,8 @@ onMounted(() => {
       >
         <VxeColumn type="checkbox" width="40" />
                               <VxeColumn field="id" title="API ID" align="center" />
-                    <VxeColumn field="apiCode" title="API 编码" align="center" />
-                    <VxeColumn field="apiName" title="API 名称" align="center" />
-                    <VxeColumn field="apiPath" title="API 路径" align="center" />
-                    <VxeColumn field="httpMethod" title="HTTP 方法" align="center">
-                      <template #default="{row}">
-                          <dict-tag :type="DICT_TYPE.PLATFORM_REQUEST_METHOD" :value="row.httpMethod" />
-                      </template>
-                    </VxeColumn>
-                    <VxeColumn field="category" title="API 分类" align="center" />
+                    <VxeColumn field="code" title="API 编码" align="center" />
+                    <VxeColumn field="name" title="API 名称" align="center" />
                     <VxeColumn field="description" title="API 描述" align="center" />
                     <VxeColumn field="status" title="状态" align="center">
                       <template #default="{row}">
@@ -312,16 +265,10 @@ onMounted(() => {
                         <dict-tag :type="DICT_TYPE.PLATFORM_BOOL" :value="row.isPublic" />
                       </template>
                     </VxeColumn> -->
-                    <VxeColumn field="rateLimitPerMin" title="每分钟限流" align="center" />
-                    <VxeColumn field="chargeType" title="计费类型" align="center">
+                    <VxeColumn field="price" title="价格（分）" align="center" />
+                    <VxeColumn field="createdAt" title="创建时间" align="center">
                       <template #default="{row}">
-                        <dict-tag :type="DICT_TYPE.PLATFORM_CHARGE_TYPE" :value="row.chargeType" />
-                      </template>
-                    </VxeColumn>
-                    <VxeColumn field="defaultPrice" title="默认单价（分）" align="center" />
-                    <VxeColumn field="createTime" title="创建时间" align="center">
-                      <template #default="{row}">
-                        {{formatDateTime(row.createTime)}}
+                        {{formatDateTime(row.createdAt)}}
                       </template>
                     </VxeColumn>
         <VxeColumn field="operation" title="操作" align="center">

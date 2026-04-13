@@ -5,13 +5,21 @@ import { requestClient } from '#/api/request';
 export namespace SystemDictDataApi {
   /** 字典数据 */
   export type DictData = {
-    colorType: string;
-    createTime: Date;
-    cssClass: string;
+    createTime?: Date | string;
     dictType: string;
     id?: number;
     label: string;
-    remark: string;
+    remark?: string;
+    sort?: number;
+    status: number;
+    value: string;
+  };
+
+  export type DictDataRequest = {
+    id?: number;
+    dictType: string;
+    label: string;
+    remark?: string;
     sort?: number;
     status: number;
     value: string;
@@ -41,12 +49,12 @@ export function getDictData(id: number) {
 }
 
 // 新增字典数据
-export function createDictData(data: SystemDictDataApi.DictData) {
+export function createDictData(data: SystemDictDataApi.DictDataRequest) {
   return requestClient.post('/system/dict-data/create', data);
 }
 
 // 修改字典数据
-export function updateDictData(data: SystemDictDataApi.DictData) {
+export function updateDictData(data: SystemDictDataApi.DictDataRequest) {
   return requestClient.put('/system/dict-data/update', data);
 }
 
