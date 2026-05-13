@@ -10,13 +10,14 @@ import { formatDateTime } from '@vben/utils';
 
 import { getSimpleSmsChannelList } from '#/api/system/sms/channel';
 import { DictTag } from '#/components/dict-tag';
-import { getRangePickerDefaultProps } from '#/utils';
 
-/** 列表的搜索表单 */
+/** 列表的搜索表单。后端 SmsLogController 仅接受
+ *  channelId / templateCode / receiver / sendStatus 四个查询参数，
+ *  不要在前端加它没实现的过滤项（mobile 必须叫 receiver）。 */
 export function useGridFormSchema(): VbenFormSchema[] {
   return [
     {
-      fieldName: 'mobile',
+      fieldName: 'receiver',
       label: '手机号',
       component: 'Input',
       componentProps: {
@@ -37,12 +38,12 @@ export function useGridFormSchema(): VbenFormSchema[] {
       },
     },
     {
-      fieldName: 'templateId',
-      label: '模板编号',
+      fieldName: 'templateCode',
+      label: '模板编码',
       component: 'Input',
       componentProps: {
         allowClear: true,
-        placeholder: '请输入模板编号',
+        placeholder: '请输入模板编码',
       },
     },
     {
@@ -55,38 +56,11 @@ export function useGridFormSchema(): VbenFormSchema[] {
         placeholder: '请选择发送状态',
       },
     },
-    {
-      fieldName: 'sendTime',
-      label: '发送时间',
-      component: 'RangePicker',
-      componentProps: {
-        ...getRangePickerDefaultProps(),
-        allowClear: true,
-      },
-    },
-    {
-      fieldName: 'receiveStatus',
-      label: '接收状态',
-      component: 'Select',
-      componentProps: {
-        options: getDictOptions(DICT_TYPE.SYSTEM_SMS_RECEIVE_STATUS, 'number'),
-        allowClear: true,
-        placeholder: '请选择接收状态',
-      },
-    },
-    {
-      fieldName: 'receiveTime',
-      label: '接收时间',
-      component: 'RangePicker',
-      componentProps: {
-        ...getRangePickerDefaultProps(),
-        allowClear: true,
-      },
-    },
   ];
 }
 
-/** 列表的字段 */
+/** 列表的字段。字段名严格对齐后端 MessageLogVO：
+ *  receiver / content / sendStatus / sendTime / createdAt。 */
 export function useGridColumns(): VxeTableGridOptions['columns'] {
   return [
     {
@@ -95,12 +69,12 @@ export function useGridColumns(): VxeTableGridOptions['columns'] {
       minWidth: 100,
     },
     {
-      field: 'mobile',
+      field: 'receiver',
       title: '手机号',
-      minWidth: 120,
+      minWidth: 140,
     },
     {
-      field: 'templateContent',
+      field: 'content',
       title: '短信内容',
       minWidth: 300,
     },
@@ -120,45 +94,17 @@ export function useGridColumns(): VxeTableGridOptions['columns'] {
       formatter: 'formatDateTime',
     },
     {
-      field: 'receiveStatus',
-      title: '接收状态',
-      minWidth: 120,
-      cellRender: {
-        name: 'CellDict',
-        props: { type: DICT_TYPE.SYSTEM_SMS_RECEIVE_STATUS },
-      },
-    },
-    {
-      field: 'receiveTime',
-      title: '接收时间',
-      minWidth: 180,
-      formatter: 'formatDateTime',
-    },
-    {
-      field: 'channelCode',
+      field: 'channelId',
       title: '短信渠道',
-      minWidth: 120,
-      cellRender: {
-        name: 'CellDict',
-        props: { type: DICT_TYPE.SYSTEM_SMS_CHANNEL_CODE },
-      },
-    },
-    {
-      field: 'templateId',
-      title: '模板编号',
       minWidth: 100,
     },
     {
-      field: 'templateType',
-      title: '短信类型',
-      minWidth: 100,
-      cellRender: {
-        name: 'CellDict',
-        props: { type: DICT_TYPE.SYSTEM_SMS_TEMPLATE_TYPE },
-      },
+      field: 'templateCode',
+      title: '模板编码',
+      minWidth: 220,
     },
     {
-      field: 'createTime',
+      field: 'createdAt',
       title: '创建时间',
       minWidth: 180,
       formatter: 'formatDateTime',
@@ -172,20 +118,22 @@ export function useGridColumns(): VxeTableGridOptions['columns'] {
   ];
 }
 
-/** 详情页的字段 */
+/** 详情页的字段。仅展示后端 MessageLogVO 真正返回的字段；
+ *  yudao 模板里的 apiSendCode / apiReceiveMsg / receiveStatus 等
+ *  后端不写、不返回，删掉它们避免出现一堆永远空着的 description 项。 */
 export function useDetailSchema(): DescriptionItemSchema[] {
   return [
     {
-      field: 'createTime',
+      field: 'createdAt',
       label: '创建时间',
       render: (val) => formatDateTime(val) as string,
     },
     {
-      field: 'mobile',
+      field: 'receiver',
       label: '手机号',
     },
     {
-      field: 'channelCode',
+      field: 'channelId',
       label: '短信渠道',
     },
     {
@@ -193,18 +141,18 @@ export function useDetailSchema(): DescriptionItemSchema[] {
       label: '模板编号',
     },
     {
-      field: 'templateType',
-      label: '模板类型',
-      render: (val) => {
-        return h(DictTag, {
-          type: DICT_TYPE.SYSTEM_SMS_TEMPLATE_TYPE,
-          value: val,
-        });
-      },
+      field: 'templateCode',
+      label: '模板编码',
     },
     {
-      field: 'templateContent',
+      field: 'content',
       label: '短信内容',
+      span: 2,
+    },
+    {
+      field: 'params',
+      label: '发送参数',
+      span: 2,
     },
     {
       field: 'sendStatus',
@@ -222,44 +170,17 @@ export function useDetailSchema(): DescriptionItemSchema[] {
       render: (val) => formatDateTime(val) as string,
     },
     {
-      field: 'apiSendCode',
-      label: 'API 发送编码',
-    },
-    {
-      field: 'apiSendMsg',
-      label: 'API 发送消息',
-    },
-    {
-      field: 'receiveStatus',
-      label: '接收状态',
-      render: (val) => {
-        return h(DictTag, {
-          type: DICT_TYPE.SYSTEM_SMS_RECEIVE_STATUS,
-          value: val,
-        });
-      },
-    },
-    {
-      field: 'receiveTime',
-      label: '接收时间',
-      render: (val) => formatDateTime(val) as string,
-    },
-    {
-      field: 'apiReceiveCode',
-      label: 'API 接收编码',
-    },
-    {
-      field: 'apiReceiveMsg',
-      label: 'API 接收消息',
+      field: 'errorMessage',
+      label: '失败原因',
       span: 2,
     },
     {
-      field: 'apiRequestId',
-      label: 'API 请求 ID',
+      field: 'userId',
+      label: '用户编号',
     },
     {
-      field: 'apiSerialNo',
-      label: 'API 序列号',
+      field: 'userType',
+      label: '用户类型',
     },
   ];
 }

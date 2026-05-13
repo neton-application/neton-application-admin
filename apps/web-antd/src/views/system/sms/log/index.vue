@@ -3,10 +3,9 @@ import type { VxeTableGridOptions } from '#/adapter/vxe-table';
 import type { SystemSmsLogApi } from '#/api/system/sms/log';
 
 import { Page, useVbenModal } from '@vben/common-ui';
-import { downloadFileFromBlobPart } from '@vben/utils';
 
 import { ACTION_ICON, TableAction, useVbenVxeGrid } from '#/adapter/vxe-table';
-import { exportSmsLog, getSmsLogPage } from '#/api/system/sms/log';
+import { getSmsLogPage } from '#/api/system/sms/log';
 import { $t } from '#/locales';
 
 import { useGridColumns, useGridFormSchema } from './data';
@@ -17,23 +16,13 @@ const [DetailModal, detailModalApi] = useVbenModal({
   destroyOnClose: true,
 });
 
-/** 刷新表格 */
-function handleRefresh() {
-  gridApi.query();
-}
-
-/** 导出表格 */
-async function handleExport() {
-  const data = await exportSmsLog(await gridApi.formApi.getValues());
-  downloadFileFromBlobPart({ fileName: '短信日志.xls', source: data });
-}
-
-/** 查看短信日志详情 */
+/** 查看短信日志详情。导出（exportSmsLog）后端尚未实现端点，
+ *  保留按钮会得到 404；移除直到后端补 /system/sms-log/export-excel。 */
 function handleDetail(row: SystemSmsLogApi.SmsLog) {
   detailModalApi.setData(row).open();
 }
 
-const [Grid, gridApi] = useVbenVxeGrid<any>({
+const [Grid] = useVbenVxeGrid<any>({
   formOptions: {
     schema: useGridFormSchema(),
   },
@@ -69,21 +58,8 @@ const [Grid, gridApi] = useVbenVxeGrid<any>({
     <template #doc>
     </template>
 
-    <DetailModal @success="handleRefresh" />
+    <DetailModal />
     <Grid table-title="短信日志列表">
-      <template #toolbar-tools>
-        <TableAction
-          :actions="[
-            {
-              label: $t('ui.actionTitle.export'),
-              type: 'primary',
-              icon: ACTION_ICON.DOWNLOAD,
-              auth: ['system:sms-log:export'],
-              onClick: handleExport,
-            },
-          ]"
-        />
-      </template>
       <template #actions="{ row }">
         <TableAction
           :actions="[
