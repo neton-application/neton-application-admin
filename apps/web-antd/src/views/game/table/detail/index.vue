@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import type { GameHandApi } from '#/api/game/hand';
 import type { GameTableApi } from '#/api/game/table';
 
 import { computed, onMounted, ref } from 'vue';
@@ -12,6 +13,7 @@ import {
   Card,
   Descriptions,
   DescriptionsItem,
+  Drawer,
   Empty,
   Modal,
   Space,
@@ -23,6 +25,7 @@ import {
   Typography,
 } from 'ant-design-vue';
 
+import { getHandDetail, getHandList } from '#/api/game/hand';
 import {
   forceCloseTable,
   getTableAudit,
@@ -42,6 +45,13 @@ const detail = ref<GameTableApi.TableDetailResponse | null>(null);
 const ledgerRows = ref<GameTableApi.LedgerEntry[]>([]);
 const auditRows = ref<GameTableApi.AuditEvent[]>([]);
 
+// Hands tab — 单桌全部局 list (P-admin-history-kind).
+const handsLoading = ref(false);
+const handRows = ref<GameHandApi.HandSummary[]>([]);
+const handDrawerOpen = ref(false);
+const handDrawerLoading = ref(false);
+const handDrawerData = ref<GameHandApi.HandDetailResponse | null>(null);
+
 async function load() {
   if (!tableId.value) return;
   loading.value = true;
@@ -51,6 +61,35 @@ async function load() {
     auditRows.value = await getTableAudit(tableId.value);
   } finally {
     loading.value = false;
+  }
+}
+
+async function loadHands() {
+  if (!tableId.value) return;
+  handsLoading.value = true;
+  try {
+    const { list } = await getHandList(tableId.value, { limit: 200 });
+    handRows.value = list;
+  } finally {
+    handsLoading.value = false;
+  }
+}
+
+async function openHandDrawer(roundId: number) {
+  if (!tableId.value) return;
+  handDrawerOpen.value = true;
+  handDrawerLoading.value = true;
+  handDrawerData.value = null;
+  try {
+    handDrawerData.value = await getHandDetail(tableId.value, roundId);
+  } finally {
+    handDrawerLoading.value = false;
+  }
+}
+
+function handleHandsTabChange(key: number | string) {
+  if (key === 'hands' && handRows.value.length === 0) {
+    loadHands();
   }
 }
 
@@ -191,7 +230,12 @@ onMounted(load);
       description="桌不存在或无权限"
     />
 
-    <Tabs v-if="detail" default-active-key="overview" type="card">
+    <Tabs
+      v-if="detail"
+      default-active-key="overview"
+      type="card"
+      @change="handleHandsTabChange"
+    >
       <!-- Overview -->
       <TabPane key="overview" tab="Overview">
         <Card>
@@ -364,6 +408,144 @@ onMounted(load);
           />
         </Card>
       </TabPane>
+
+      <!-- Hands (P-admin-history-kind) -->
+      <TabPane key="hands" tab="Hands">
+        <Card>
+          <div class="mb-2 flex justify-between">
+            <Typography.Text type="secondary">
+              单桌已记录的局 (最近 200 局, 含进行中). 点击 round_id 查看完整 actions + ledger.
+            </Typography.Text>
+            <Button :loading="handsLoading" size="small" @click="loadHands">
+              刷新
+            </Button>
+          </div>
+          <Table
+            :data-source="handRows"
+            :loading="handsLoading"
+            :pagination="{ pageSize: 20 }"
+            row-key="round_id"
+            size="small"
+            :columns="[
+              { title: 'Round', dataIndex: 'round_id', width: 80,
+                customRender: ({ value }) => value },
+              { title: 'Actions', dataIndex: 'action_count', width: 100 },
+              { title: 'Participants', dataIndex: 'participant_user_ids', width: 220,
+                customRender: ({ value }) => (value as number[]).join(', ') || '-' },
+              { title: 'Winners', dataIndex: 'winner_user_ids', width: 200,
+                customRender: ({ value }) => (value as number[]).join(', ') || '-' },
+              { title: 'Pot (debit)', dataIndex: 'total_debit', width: 110 },
+              { title: 'Payout (credit)', dataIndex: 'total_credit', width: 130 },
+              { title: 'Rake', dataIndex: 'rake', width: 100 },
+              { title: 'Started', dataIndex: 'started_at', width: 170,
+                customRender: ({ value }) => value ? formatDateTime(value) : '-' },
+              { title: 'Ended', dataIndex: 'ended_at', width: 170,
+                customRender: ({ value }) => value ? formatDateTime(value) : '-' },
+              { title: '详情', key: 'action', width: 100, fixed: 'right' },
+            ]"
+          >
+            <template #bodyCell="{ column, record }">
+              <template v-if="column.key === 'action'">
+                <Button
+                  size="small"
+                  type="link"
+                  @click="openHandDrawer(record.round_id)"
+                >
+                  查看
+                </Button>
+              </template>
+            </template>
+          </Table>
+        </Card>
+      </TabPane>
     </Tabs>
+
+    <!-- Hand detail Drawer — actions + ledger 完整列表 -->
+    <Drawer
+      v-model:open="handDrawerOpen"
+      :title="handDrawerData
+        ? `局详情 table=${handDrawerData.table_id} round=${handDrawerData.round_id}`
+        : '局详情'"
+      width="900"
+      placement="right"
+    >
+      <Empty v-if="!handDrawerLoading && !handDrawerData" description="未取到详情" />
+      <div v-else-if="handDrawerData" class="space-y-4">
+        <Card title="Summary" size="small">
+          <Descriptions :column="2" bordered size="small">
+            <DescriptionsItem label="Round ID">
+              {{ handDrawerData.summary.round_id }}
+            </DescriptionsItem>
+            <DescriptionsItem label="Action Count">
+              {{ handDrawerData.summary.action_count }}
+            </DescriptionsItem>
+            <DescriptionsItem label="Started">
+              {{ handDrawerData.summary.started_at
+                ? formatDateTime(handDrawerData.summary.started_at) : '-' }}
+            </DescriptionsItem>
+            <DescriptionsItem label="Ended">
+              {{ handDrawerData.summary.ended_at
+                ? formatDateTime(handDrawerData.summary.ended_at) : '-' }}
+            </DescriptionsItem>
+            <DescriptionsItem label="Pot (Debit)">
+              {{ handDrawerData.summary.total_debit }}
+            </DescriptionsItem>
+            <DescriptionsItem label="Payout (Credit)">
+              {{ handDrawerData.summary.total_credit }}
+            </DescriptionsItem>
+            <DescriptionsItem label="Rake">
+              {{ handDrawerData.summary.rake }}
+            </DescriptionsItem>
+            <DescriptionsItem label="Ledger Entries">
+              {{ handDrawerData.summary.ledger_count }}
+            </DescriptionsItem>
+            <DescriptionsItem label="Participants" :span="2">
+              {{ handDrawerData.summary.participant_user_ids.join(', ') || '-' }}
+            </DescriptionsItem>
+            <DescriptionsItem label="Winners" :span="2">
+              {{ handDrawerData.summary.winner_user_ids.join(', ') || '-' }}
+            </DescriptionsItem>
+          </Descriptions>
+        </Card>
+
+        <Card title="Actions (按 action_seq 顺序)" size="small">
+          <Table
+            :data-source="handDrawerData.actions"
+            :pagination="{ pageSize: 50 }"
+            row-key="action_seq"
+            size="small"
+            :columns="[
+              { title: 'Seq', dataIndex: 'action_seq', width: 80 },
+              { title: 'Seat', dataIndex: 'seat_index', width: 70 },
+              { title: 'User', dataIndex: 'user_id', width: 130 },
+              { title: 'Action', dataIndex: 'action', width: 140 },
+              { title: 'Payload', dataIndex: 'payload_json', ellipsis: true },
+              { title: 'Applied SV', dataIndex: 'applied_state_version', width: 110 },
+              { title: 'Created', dataIndex: 'created_at', width: 170,
+                customRender: ({ value }) => value ? formatDateTime(value) : '-' },
+            ]"
+          />
+        </Card>
+
+        <Card title="Ledger (按 entry_id 顺序)" size="small">
+          <Table
+            :data-source="handDrawerData.ledger"
+            :pagination="{ pageSize: 50 }"
+            row-key="created_at"
+            size="small"
+            :columns="[
+              { title: 'User', dataIndex: 'user_id', width: 130 },
+              { title: 'Currency', dataIndex: 'currency_type', width: 110 },
+              { title: 'Amount', dataIndex: 'amount', width: 100 },
+              { title: 'Direction', dataIndex: 'direction', width: 100,
+                customRender: ({ value }) => directionLabel(Number(value)) },
+              { title: 'Reason', dataIndex: 'reason', width: 130 },
+              { title: 'Created', dataIndex: 'created_at', width: 170,
+                customRender: ({ value }) => value ? formatDateTime(value) : '-' },
+            ]"
+          />
+        </Card>
+      </div>
+    </Drawer>
   </Page>
 </template>

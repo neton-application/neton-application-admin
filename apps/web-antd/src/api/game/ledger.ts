@@ -6,12 +6,13 @@ import { requestClient } from '#/api/request';
  * Game admin Ledger API — 跨桌 ledger 查询 + summary.
  * 对接 controller/admin/ledger/LedgerController (实际 /admin/game/ledger/*).
  *
- * 后端契约 (game-admin-console A):
+ * 后端契约 (game-admin-console A + P-admin-history-kind):
  *   GET /admin/game/ledger/page
- *     filter: table_id, user_id, club_id, currency_type, reason, from, to,
- *             page, page_size
+ *     filter: table_id, user_id, club_id, game_kind, currency_type, reason,
+ *             from, to, page, page_size
  *     返回 list + summary{total_debit, total_credit, net, row_count}
  *     权限: game:ledger:read
+ *     game_kind: V004 schema 内置列, 直接 = (无 JOIN).
  */
 
 export namespace GameLedgerApi {
@@ -38,6 +39,7 @@ export namespace GameLedgerApi {
     table_id?: number;
     user_id?: number;
     club_id?: number;
+    game_kind?: string;
     currency_type?: string;
     reason?: string;
     from?: number;

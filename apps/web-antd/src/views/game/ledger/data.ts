@@ -22,6 +22,12 @@ export function useGridFormSchema(): VbenFormSchema[] {
       componentProps: { allowClear: true, min: 1 },
     },
     {
+      fieldName: 'game_kind',
+      label: '玩法',
+      component: 'Input',
+      componentProps: { allowClear: true, placeholder: 'e.g. texas_holdem' },
+    },
+    {
       fieldName: 'currency_type',
       label: '币种',
       component: 'Select',

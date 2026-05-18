@@ -6,10 +6,12 @@ import { requestClient } from '#/api/request';
  * Game admin Audit API — 跨桌 audit 查询.
  * 对接 controller/admin/audit/AuditController (实际 /admin/game/audit/*).
  *
- * 后端契约 (game-admin-console A):
+ * 后端契约 (game-admin-console A + P-admin-history-kind):
  *   GET /admin/game/audit/page
- *     filter: table_id, user_id, event_type, from, to, page, page_size
+ *     filter: table_id, user_id, event_type, club_id, game_kind, from, to,
+ *             page, page_size
  *     权限: game:audit:read
+ *     club_id / game_kind: 后端 JOIN game_table 实现, 只能匹配 scope_type='game_table'.
  */
 
 export namespace GameAuditApi {
@@ -32,6 +34,8 @@ export namespace GameAuditApi {
     table_id?: number;
     user_id?: number;
     event_type?: string;
+    club_id?: number;
+    game_kind?: string;
     from?: number;
     to?: number;
   }

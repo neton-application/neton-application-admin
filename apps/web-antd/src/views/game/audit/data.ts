@@ -25,6 +25,18 @@ export function useGridFormSchema(): VbenFormSchema[] {
       },
     },
     {
+      fieldName: 'club_id',
+      label: '俱乐部 ID',
+      component: 'InputNumber',
+      componentProps: { allowClear: true, min: 1 },
+    },
+    {
+      fieldName: 'game_kind',
+      label: '玩法',
+      component: 'Input',
+      componentProps: { allowClear: true, placeholder: 'e.g. texas_holdem' },
+    },
+    {
       fieldName: 'from',
       label: '起始 (ms)',
       component: 'InputNumber',

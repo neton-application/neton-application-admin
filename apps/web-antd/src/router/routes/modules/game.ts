@@ -13,6 +13,7 @@ import type { RouteRecordRaw } from 'vue-router';
  *   游戏中心 (目录, /game)
  *     ├─ 俱乐部 (/game/club)           [占位; P-club-adm 待落地]
  *     ├─ 牌桌管理 (/game/table)
+ *     ├─ 游戏类型 (/game/kind)         [P-admin-history-kind 新增]
  *     ├─ 游戏日志 (/game/audit)        [前称"审计日志"; 更名"游戏日志"]
  *     └─ 资金流水 (/game/ledger)
  *   牌桌详情 (/game/table/detail) hideInMenu, 由列表行 action 跳.
@@ -27,6 +28,9 @@ import type { RouteRecordRaw } from 'vue-router';
  *   game:table:force_close  强关桌
  *   game:audit:read         游戏日志查询
  *   game:ledger:read        资金流水查询
+ *   game:hand:read          局历史查询 (P-admin-history-kind; 牌桌详情 Hands tab)
+ *   game:kind:read          游戏类型查看 (P-admin-history-kind)
+ *   game:kind:update        游戏类型编辑 / enable / disable
  *   (俱乐部 admin 权限 P-club-adm 落地时定; 暂用 game:table:read 占位)
  */
 const routes: RouteRecordRaw[] = [
@@ -59,6 +63,16 @@ const routes: RouteRecordRaw[] = [
       icon: 'lucide:table-2',
       activePath: '/game/table',
       hideInMenu: true,
+    },
+  },
+  {
+    path: '/game/kind',
+    component: () => import('#/views/game/kind/index.vue'),
+    name: 'GameKind',
+    meta: {
+      title: '游戏类型',
+      icon: 'lucide:gamepad-2',
+      keepAlive: true,
     },
   },
   {
