@@ -1,59 +1,31 @@
 import type { RouteRecordRaw } from 'vue-router';
 
 /**
- * 游戏管理路由 (game-admin-console Phase B + 菜单结构调整).
+ * 游戏管理本地路由 — 只放 hideInMenu 的子页面 (与 privchat/system/infra 同款约定).
  *
- * 对接后端 privchat-application-module-game commit 4e2a9d8 (Phase A):
- *   GET /admin/game/tables/page             桌列表
- *   GET /admin/game/tables/get/{id}         桌详情
- *   GET /admin/game/audit/page              跨桌 audit
- *   GET /admin/game/ledger/page             跨桌 ledger
+ * 主菜单 (俱乐部 / 牌桌管理 / 游戏类型 / 游戏日志 / 资金流水) **不**写在这里:
+ *   - admin app accessMode='backend' (见 apps/web-antd/src/preferences.ts),
+ *     主菜单全部由 DB `system_menus` 表驱动 → 后端 `/admin/system/auth/get-permission-info`
+ *     下发 → 前端 `generateRoutesByBackend` 把字符串 component 映射到
+ *     `views/game/<x>/index.vue` 自动注册路由.
+ *   - 如果在这里再写一份 `path: '/game/table'`, 会和后端下发同 path 路由冲突,
+ *     且会直接 push 到 sidebar 顶级 (没"游戏中心"父目录包裹).
  *
- * 菜单层级 (与 system_menu seed 对齐, 见 GAME_V1_RELEASE_PROVING.md §7):
- *   游戏中心 (目录, /game)
- *     ├─ 俱乐部 (/game/club)           [占位; P-club-adm 待落地]
- *     ├─ 牌桌管理 (/game/table)
- *     ├─ 游戏类型 (/game/kind)         [P-admin-history-kind 新增]
- *     ├─ 游戏日志 (/game/audit)        [前称"审计日志"; 更名"游戏日志"]
- *     └─ 资金流水 (/game/ledger)
- *   牌桌详情 (/game/table/detail) hideInMenu, 由列表行 action 跳.
+ * SQL seed (DB system_menus 必须先 INSERT 完整 6 行 1 目录 + 5 子菜单):
+ *   见 GAME_V1_RELEASE_PROVING.md §7.2.
  *
- * 菜单可见性: privchat-application-admin accessMode='backend' (见
- * apps/web-antd/src/preferences.ts), sidebar 由 system_menus 表驱动.
- * 本文件只声明本地路由; 上线前必须在 DB 加 system_menus 行
- * (SQL seed 见 GAME_V1_RELEASE_PROVING.md §7.3).
- *
- * 权限点:
- *   game:table:read         牌桌列表 / 详情 / 跨桌端点 read
- *   game:table:force_close  强关桌
- *   game:audit:read         游戏日志查询
- *   game:ledger:read        资金流水查询
- *   game:hand:read          局历史查询 (P-admin-history-kind; 牌桌详情 Hands tab)
- *   game:kind:read          游戏类型查看 (P-admin-history-kind)
- *   game:kind:update        游戏类型编辑 / enable / disable
- *   (俱乐部 admin 权限 P-club-adm 落地时定; 暂用 game:table:read 占位)
+ * 后端 endpoint 对接 (参考):
+ *   GET  /admin/game/tables/page                    桌列表  (game:table:read)
+ *   GET  /admin/game/tables/get/{id}                桌详情  (game:table:read)
+ *   POST /admin/game/tables/{id}/force-close        强关桌  (game:table:force_close)
+ *   GET  /admin/game/tables/{id}/hands              单桌局列表 (game:hand:read)
+ *   GET  /admin/game/tables/{id}/hands/{round_id}   单局详情   (game:hand:read)
+ *   GET  /admin/game/audit/page                     跨桌 audit (game:audit:read)
+ *   GET  /admin/game/ledger/page                    跨桌 ledger (game:ledger:read)
+ *   GET  /admin/game/kinds/page                     game_kind 列表 (game:kind:read)
+ *   POST /admin/game/kinds/{kind}/{update,enable,disable}  (game:kind:update)
  */
 const routes: RouteRecordRaw[] = [
-  {
-    path: '/game/club',
-    component: () => import('#/views/game/club/index.vue'),
-    name: 'GameClub',
-    meta: {
-      title: '俱乐部',
-      icon: 'lucide:users',
-      keepAlive: true,
-    },
-  },
-  {
-    path: '/game/table',
-    component: () => import('#/views/game/table/index.vue'),
-    name: 'GameTable',
-    meta: {
-      title: '牌桌管理',
-      icon: 'lucide:layout-dashboard',
-      keepAlive: true,
-    },
-  },
   {
     path: '/game/table/detail',
     component: () => import('#/views/game/table/detail/index.vue'),
@@ -63,36 +35,6 @@ const routes: RouteRecordRaw[] = [
       icon: 'lucide:table-2',
       activePath: '/game/table',
       hideInMenu: true,
-    },
-  },
-  {
-    path: '/game/kind',
-    component: () => import('#/views/game/kind/index.vue'),
-    name: 'GameKind',
-    meta: {
-      title: '游戏类型',
-      icon: 'lucide:gamepad-2',
-      keepAlive: true,
-    },
-  },
-  {
-    path: '/game/audit',
-    component: () => import('#/views/game/audit/index.vue'),
-    name: 'GameAudit',
-    meta: {
-      title: '游戏日志',
-      icon: 'lucide:scroll-text',
-      keepAlive: true,
-    },
-  },
-  {
-    path: '/game/ledger',
-    component: () => import('#/views/game/ledger/index.vue'),
-    name: 'GameLedger',
-    meta: {
-      title: '资金流水',
-      icon: 'lucide:landmark',
-      keepAlive: true,
     },
   },
 ];
