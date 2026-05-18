@@ -1,34 +1,130 @@
 <script lang="ts" setup>
-import { Page } from '@vben/common-ui';
+import type { VxeTableGridOptions } from '#/adapter/vxe-table';
+import type { GameClubApi } from '#/api/game/club';
 
-import { Alert, Card, Typography } from 'ant-design-vue';
+import { useRouter } from 'vue-router';
+
+import { Page } from '@vben/common-ui';
+import { formatDateTime } from '@vben/utils';
+
+import { Button, Tag } from 'ant-design-vue';
+
+import { useVbenVxeGrid } from '#/adapter/vxe-table';
+import { getClubPage } from '#/api/game/club';
+
+const router = useRouter();
+
+const [Grid] = useVbenVxeGrid<GameClubApi.ClubListItem>({
+  formOptions: {
+    schema: [
+      {
+        fieldName: 'club_id',
+        label: '俱乐部 ID',
+        component: 'InputNumber',
+        componentProps: { allowClear: true, min: 1 },
+      },
+      {
+        fieldName: 'name',
+        label: '名称',
+        component: 'Input',
+        componentProps: { allowClear: true, placeholder: '模糊搜索 (ILIKE)' },
+      },
+      {
+        fieldName: 'owner_user_id',
+        label: '创建人 user_id',
+        component: 'InputNumber',
+        componentProps: { allowClear: true, min: 1 },
+      },
+      {
+        fieldName: 'status',
+        label: '状态',
+        component: 'Select',
+        componentProps: {
+          allowClear: true,
+          options: [
+            { label: 'ACTIVE', value: 1 },
+            { label: 'DISSOLVED', value: 2 },
+          ],
+        },
+      },
+    ],
+  },
+  gridOptions: {
+    columns: [
+      { field: 'club_id', title: 'ID', width: 100, fixed: 'left' },
+      { field: 'name', title: '名称', minWidth: 200 },
+      {
+        field: 'description',
+        title: '描述',
+        minWidth: 240,
+        showOverflow: 'tooltip',
+      },
+      { field: 'owner_user_id', title: '创建人', width: 130 },
+      {
+        field: 'status',
+        title: '状态',
+        width: 110,
+        slots: { default: 'statusCell' },
+      },
+      { field: 'member_count', title: '成员数', width: 100 },
+      {
+        field: 'created_at',
+        title: '创建时间',
+        width: 170,
+        formatter: ({ cellValue }) =>
+          cellValue ? formatDateTime(cellValue) : '-',
+      },
+      {
+        field: 'action',
+        title: '操作',
+        width: 110,
+        fixed: 'right',
+        slots: { default: 'actionCell' },
+      },
+    ],
+    height: 'auto',
+    keepSource: true,
+    proxyConfig: {
+      ajax: {
+        query: async ({ page }, formValues) => {
+          return await getClubPage({
+            page: page.currentPage,
+            page_size: page.pageSize,
+            ...formValues,
+          });
+        },
+      },
+    },
+    rowConfig: { keyField: 'club_id', isHover: true },
+    toolbarConfig: { refresh: true, search: true },
+  } as VxeTableGridOptions<GameClubApi.ClubListItem>,
+} as any);
+
+function statusLabel(s: number): { color: string; text: string } {
+  if (s === 1) return { color: 'green', text: 'ACTIVE' };
+  if (s === 2) return { color: 'default', text: 'DISSOLVED' };
+  return { color: 'default', text: `status=${s}` };
+}
+
+function openDetail(row: GameClubApi.ClubListItem) {
+  router.push({
+    name: 'GameClubDetail',
+    query: { clubId: String(row.club_id) },
+  });
+}
 </script>
 
 <template>
   <Page auto-content-height>
-    <Card title="俱乐部管理">
-      <Alert
-        type="info"
-        message="占位页 — P-club-adm 待落地"
-        description="后端 admin Club controller 还未实现。当前 /app/club/* 是 owner-self 视角 (创建 / 加入 / 离开 / dissolve owner-only)。 admin 强 dissolve / 转让 owner / 踢人 / 列所有 club 等能力还未做。"
-        show-icon
-      />
-      <div class="mt-4">
-        <Typography.Title :level="5">已规划的 admin 端能力 (P-club-adm)</Typography.Title>
-        <Typography.Paragraph>
-          <ul class="list-disc pl-6">
-            <li>列出全部 club (含 DISSOLVED) + filter (owner_user_id / status)</li>
-            <li>club 详情: 成员 / 邀请 / 活跃桌</li>
-            <li>admin force-dissolve (绕 owner-only)</li>
-            <li>转让 owner / role 升降</li>
-            <li>踢人 (admin 强 leave)</li>
-            <li>邀请 sweeper (清理过期 PENDING)</li>
-          </ul>
-        </Typography.Paragraph>
-        <Typography.Paragraph>
-          相关 spec: <Typography.Text code>GAME_V1_RELEASE_PROVING.md §6 P-club-adm</Typography.Text>.
-        </Typography.Paragraph>
-      </div>
-    </Card>
+    <Grid table-title="俱乐部管理 (admin 视角)">
+      <template #statusCell="{ row }">
+        <Tag :color="statusLabel(row.status).color">
+          {{ statusLabel(row.status).text }}
+        </Tag>
+      </template>
+      <template #actionCell="{ row }">
+        <Button size="small" type="link" @click="openDetail(row)">详情</Button>
+      </template>
+    </Grid>
   </Page>
 </template>

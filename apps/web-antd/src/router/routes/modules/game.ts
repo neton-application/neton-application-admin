@@ -37,6 +37,17 @@ const routes: RouteRecordRaw[] = [
       hideInMenu: true,
     },
   },
+  {
+    path: '/game/club/detail',
+    component: () => import('#/views/game/club/detail/index.vue'),
+    name: 'GameClubDetail',
+    meta: {
+      title: '俱乐部详情',
+      icon: 'lucide:users',
+      activePath: '/game/club',
+      hideInMenu: true,
+    },
+  },
 ];
 
 export default routes;
