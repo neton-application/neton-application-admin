@@ -52,6 +52,13 @@ export namespace GameWalletApi {
 
 const BASE = '/game/wallets';
 
+// OPS-B: admin 充值 / 扣账 入参
+export interface MemberWalletAdjustBody {
+  amount: number;
+  currency_type?: null | string;
+  note?: null | string;
+}
+
 export function getClubWallet(clubId: number, currencyType?: string) {
   return requestClient.get<GameWalletApi.ClubWallet>(`${BASE}/club/${clubId}`, {
     params: currencyType ? { currency_type: currencyType } : undefined,
@@ -80,5 +87,29 @@ export function getAgentWallet(agentId: number, currencyType?: string) {
   return requestClient.get<GameWalletApi.AgentWallet>(
     `${BASE}/agent/${agentId}`,
     { params: currencyType ? { currency_type: currencyType } : undefined },
+  );
+}
+
+// OPS-B: admin 给玩家充值
+export function topupMemberWallet(
+  clubId: number,
+  userId: number,
+  body: MemberWalletAdjustBody,
+) {
+  return requestClient.post<GameWalletApi.MemberWallet>(
+    `${BASE}/club/${clubId}/member/${userId}/topup`,
+    body,
+  );
+}
+
+// OPS-B: admin 扣玩家余额
+export function deductMemberWallet(
+  clubId: number,
+  userId: number,
+  body: MemberWalletAdjustBody,
+) {
+  return requestClient.post<GameWalletApi.MemberWallet>(
+    `${BASE}/club/${clubId}/member/${userId}/deduct`,
+    body,
   );
 }

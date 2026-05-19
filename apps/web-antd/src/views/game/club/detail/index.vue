@@ -21,6 +21,7 @@ import {
   Empty,
   Form,
   FormItem,
+  Input,
   InputNumber,
   message,
   Modal,
@@ -42,7 +43,12 @@ import {
 import { getTablePage } from '#/api/game/table';
 import { getLedgerPage } from '#/api/game/ledger';
 import { getAuditPage } from '#/api/game/audit';
-import { getClubMemberWallets, getClubWallet } from '#/api/game/wallet';
+import {
+  deductMemberWallet,
+  getClubMemberWallets,
+  getClubWallet,
+  topupMemberWallet,
+} from '#/api/game/wallet';
 
 /**
  * 俱乐部详情页 (P-club-game-center) — 俱乐部老板视角入口.
@@ -93,6 +99,12 @@ const memberWallets = ref<GameWalletApi.MemberWallet[]>([]);
 const bindAgentOpen = ref(false);
 const bindForm = reactive({ agent_id: 0 });
 const bindAgentDetail = ref<GameAgentApi.AgentRow | null>(null);
+
+// OPS-B: topup / deduct modal
+const adjustOpen = ref(false);
+const adjustMode = ref<'deduct' | 'topup'>('topup');
+const adjustTargetUserId = ref(0);
+const adjustForm = reactive({ amount: 0, note: '' });
 
 async function loadDetail() {
   if (!clubId.value) return;
@@ -213,6 +225,42 @@ async function submitBindAgent() {
   });
   message.success(`已绑定到代理 ${bindAgentDetail.value.display_name}`);
   bindAgentOpen.value = false;
+}
+
+// OPS-B: 给会员充值 / 扣账
+function openTopupModal(userId: number) {
+  adjustMode.value = 'topup';
+  adjustTargetUserId.value = userId;
+  adjustForm.amount = 0;
+  adjustForm.note = '';
+  adjustOpen.value = true;
+}
+
+function openDeductModal(userId: number) {
+  adjustMode.value = 'deduct';
+  adjustTargetUserId.value = userId;
+  adjustForm.amount = 0;
+  adjustForm.note = '';
+  adjustOpen.value = true;
+}
+
+async function submitAdjust() {
+  if (!adjustForm.amount || adjustForm.amount <= 0) {
+    message.error('amount 必须 > 0');
+    return;
+  }
+  const fn = adjustMode.value === 'topup' ? topupMemberWallet : deductMemberWallet;
+  try {
+    await fn(clubId.value, adjustTargetUserId.value, {
+      amount: adjustForm.amount,
+      note: adjustForm.note.trim() || null,
+    });
+    message.success(adjustMode.value === 'topup' ? '充值成功' : '扣账成功');
+    adjustOpen.value = false;
+    await loadWallet();
+  } catch (e: any) {
+    message.error(`操作失败: ${e?.message ?? e}`);
+  }
 }
 
 // 切 tab 时按需 lazy load (Overview 已经在 mount 时 loadDetail).
@@ -579,15 +627,37 @@ onMounted(loadDetail);
               { title: '净盈亏', dataIndex: 'win_loss_total', width: 130 },
               { title: '累计买入', dataIndex: 'buy_in_total', width: 120 },
               { title: '累计兑出', dataIndex: 'cash_out_total', width: 120 },
-              { title: 'Version', dataIndex: 'version', width: 90 },
               {
                 title: '更新',
                 dataIndex: 'updated_at',
                 width: 170,
                 customRender: ({ value }) => (value ? formatDateTime(value) : '-'),
               },
+              { title: '操作', key: 'wallet_action', width: 160, fixed: 'right' },
             ]"
-          />
+          >
+            <template #bodyCell="{ column, record }">
+              <template v-if="column.key === 'wallet_action'">
+                <Space size="small">
+                  <Button
+                    size="small"
+                    type="link"
+                    @click="openTopupModal(record.user_id)"
+                  >
+                    充值
+                  </Button>
+                  <Button
+                    size="small"
+                    type="link"
+                    danger
+                    @click="openDeductModal(record.user_id)"
+                  >
+                    扣账
+                  </Button>
+                </Space>
+              </template>
+            </template>
+          </Table>
         </Card>
       </TabPane>
 
@@ -637,6 +707,48 @@ onMounted(loadDetail);
         </Card>
       </TabPane>
     </Tabs>
+
+    <!-- OPS-B: 会员充值 / 扣账 modal -->
+    <Modal
+      v-model:open="adjustOpen"
+      :title="adjustMode === 'topup'
+        ? `给玩家 #${adjustTargetUserId} 充值`
+        : `从玩家 #${adjustTargetUserId} 扣账`"
+      width="520"
+      :destroy-on-close="true"
+      @ok="submitAdjust"
+    >
+      <Alert
+        v-if="adjustMode === 'topup'"
+        type="info"
+        message="充值 = 给玩家 club_credit available 余额加钱. 不影响俱乐部钱包 (club_credit 是内部记账 token, 不是真钱). 操作留 wallet_ledger 审计."
+        show-icon
+        class="mb-4"
+      />
+      <Alert
+        v-else
+        type="warning"
+        message="扣账 = 从玩家 available 直接扣. 校验 available >= amount 不足拒. 操作留 wallet_ledger 审计."
+        show-icon
+        class="mb-4"
+      />
+      <Form :label-col="{ span: 6 }">
+        <FormItem label="金额" required>
+          <InputNumber
+            v-model:value="adjustForm.amount"
+            :min="1"
+            :max="100_000_000"
+            style="width: 100%"
+          />
+        </FormItem>
+        <FormItem label="备注">
+          <Input
+            v-model:value="adjustForm.note"
+            placeholder="可选: 客诉单号 / 上分 / 下分 / 内部转账理由"
+          />
+        </FormItem>
+      </Form>
+    </Modal>
 
     <!-- Bind agent modal -->
     <Modal
