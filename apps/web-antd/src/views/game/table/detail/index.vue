@@ -150,6 +150,52 @@ function directionLabel(d: number): string {
   return `dir=${d}`;
 }
 
+// P-revenue-runtime: 5 个 share reason 的中文标签 + 颜色 (Tag color).
+const PROFIT_CHAIN_META: Record<string, { color: string; label: string }> = {
+  platform_share: { color: 'gold', label: '平台收入' },
+  club_share: { color: 'green', label: '俱乐部收入' },
+  agent_share: { color: 'blue', label: '直属代理' },
+  upper_agent_share: { color: 'cyan', label: '上级代理' },
+  top_agent_share: { color: 'purple', label: '总代理' },
+  // 历史遗留 reason (V009 之前):
+  rake_take: { color: 'orange', label: '抽水 (legacy)' },
+  // 玩家行:
+  winner_pot: { color: 'green', label: '玩家赢' },
+  bet_refund: { color: 'cyan', label: '退还多投' },
+  blind_sb: { color: 'default', label: '盲注 SB' },
+  blind_bb: { color: 'default', label: '盲注 BB' },
+  bet_call: { color: 'default', label: '跟注' },
+  bet_raise: { color: 'default', label: '加注' },
+  bet_all_in: { color: 'red', label: 'All-in' },
+};
+
+function profitChainColor(reason: string): string {
+  return PROFIT_CHAIN_META[reason]?.color ?? 'default';
+}
+
+// 抽出本局所有 share_* 行 + 计算总和 + 占比.
+const handProfitChain = computed(() => {
+  const ledger = handDrawerData.value?.ledger ?? [];
+  const shareReasons = new Set([
+    'platform_share',
+    'club_share',
+    'agent_share',
+    'upper_agent_share',
+    'top_agent_share',
+    'rake_take',
+  ]);
+  const rows = ledger.filter((e) => shareReasons.has(e.reason));
+  const total = rows.reduce((acc, e) => acc + Number(e.amount), 0);
+  return rows.map((e) => ({
+    reason: e.reason,
+    label: PROFIT_CHAIN_META[e.reason]?.label ?? e.reason,
+    amount: Number(e.amount),
+    percent:
+      total > 0 ? `${((Number(e.amount) / total) * 100).toFixed(2)}%` : '-',
+    user_id: e.user_id,
+  }));
+});
+
 const snapshotPretty = computed(() => {
   if (!detail.value?.round?.snapshot) return null;
   try {
@@ -527,7 +573,44 @@ onMounted(load);
           />
         </Card>
 
-        <Card title="Ledger (按 entry_id 顺序)" size="small">
+        <!-- P-revenue-runtime: 利润链路 (本局抽水的去向分布) -->
+        <Card
+          v-if="handProfitChain.length > 0"
+          title="利润链路 (Profit Chain)"
+          size="small"
+        >
+          <Typography.Text type="secondary" class="mb-2 block text-xs">
+            本手的总抽水如何分配到平台 / 俱乐部 / 各级代理 (real-time split by share rule).
+          </Typography.Text>
+          <Table
+            :data-source="handProfitChain"
+            :pagination="false"
+            row-key="reason"
+            size="small"
+            :columns="[
+              { title: '类型', dataIndex: 'label', width: 160 },
+              { title: 'Reason', dataIndex: 'reason', width: 200 },
+              { title: 'Amount', dataIndex: 'amount', width: 130 },
+              { title: '占比', dataIndex: 'percent', width: 100 },
+              { title: '接收方 user_id', dataIndex: 'user_id', width: 160 },
+            ]"
+          >
+            <template #bodyCell="{ column, record }">
+              <template v-if="column.dataIndex === 'label'">
+                <Tag :color="profitChainColor(record.reason)">
+                  {{ record.label }}
+                </Tag>
+              </template>
+              <template v-else-if="column.dataIndex === 'amount'">
+                <span class="font-semibold" style="color: #3f8600">
+                  +{{ record.amount }}
+                </span>
+              </template>
+            </template>
+          </Table>
+        </Card>
+
+        <Card title="Ledger (按 entry_id 顺序; 含玩家输赢 + 分账)" size="small">
           <Table
             :data-source="handDrawerData.ledger"
             :pagination="{ pageSize: 50 }"
@@ -539,11 +622,19 @@ onMounted(load);
               { title: 'Amount', dataIndex: 'amount', width: 100 },
               { title: 'Direction', dataIndex: 'direction', width: 100,
                 customRender: ({ value }) => directionLabel(Number(value)) },
-              { title: 'Reason', dataIndex: 'reason', width: 130 },
+              { title: 'Reason', dataIndex: 'reason', width: 160 },
               { title: 'Created', dataIndex: 'created_at', width: 170,
                 customRender: ({ value }) => value ? formatDateTime(value) : '-' },
             ]"
-          />
+          >
+            <template #bodyCell="{ column, record }">
+              <template v-if="column.dataIndex === 'reason'">
+                <Tag :color="profitChainColor(record.reason)">
+                  {{ record.reason }}
+                </Tag>
+              </template>
+            </template>
+          </Table>
         </Card>
       </div>
     </Drawer>

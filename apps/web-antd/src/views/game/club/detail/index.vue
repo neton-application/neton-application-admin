@@ -1,10 +1,12 @@
 <script lang="ts" setup>
+import type { GameAgentApi } from '#/api/game/agent';
 import type { GameClubApi } from '#/api/game/club';
 import type { GameTableApi } from '#/api/game/table';
 import type { GameLedgerApi } from '#/api/game/ledger';
 import type { GameAuditApi } from '#/api/game/audit';
+import type { GameWalletApi } from '#/api/game/wallet';
 
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { Page } from '@vben/common-ui';
@@ -17,6 +19,11 @@ import {
   Descriptions,
   DescriptionsItem,
   Empty,
+  Form,
+  FormItem,
+  InputNumber,
+  message,
+  Modal,
   Space,
   Statistic,
   Table,
@@ -26,6 +33,7 @@ import {
   Typography,
 } from 'ant-design-vue';
 
+import { bindClubToAgent, getAgentDetail } from '#/api/game/agent';
 import {
   getClubDetail,
   getClubMembers,
@@ -34,6 +42,7 @@ import {
 import { getTablePage } from '#/api/game/table';
 import { getLedgerPage } from '#/api/game/ledger';
 import { getAuditPage } from '#/api/game/audit';
+import { getClubMemberWallets, getClubWallet } from '#/api/game/wallet';
 
 /**
  * 俱乐部详情页 (P-club-game-center) — 俱乐部老板视角入口.
@@ -76,6 +85,14 @@ const ledgerPage = ref({ current: 1, pageSize: 20, total: 0 });
 
 const revenueLoading = ref(false);
 const revenue = ref<GameClubApi.RevenueSummary | null>(null);
+
+// P-revenue-runtime: 钱包 + 代理绑定
+const walletLoading = ref(false);
+const clubWallet = ref<GameWalletApi.ClubWallet | null>(null);
+const memberWallets = ref<GameWalletApi.MemberWallet[]>([]);
+const bindAgentOpen = ref(false);
+const bindForm = reactive({ agent_id: 0 });
+const bindAgentDetail = ref<GameAgentApi.AgentRow | null>(null);
 
 async function loadDetail() {
   if (!clubId.value) return;
@@ -155,6 +172,49 @@ async function loadRevenue() {
   }
 }
 
+async function loadWallet() {
+  if (!clubId.value) return;
+  walletLoading.value = true;
+  try {
+    clubWallet.value = await getClubWallet(clubId.value);
+    memberWallets.value = await getClubMemberWallets(clubId.value, 200);
+  } finally {
+    walletLoading.value = false;
+  }
+}
+
+async function openBindAgent() {
+  bindForm.agent_id = 0;
+  bindAgentDetail.value = null;
+  bindAgentOpen.value = true;
+}
+
+async function lookupAgent() {
+  if (!bindForm.agent_id) {
+    bindAgentDetail.value = null;
+    return;
+  }
+  try {
+    bindAgentDetail.value = await getAgentDetail(bindForm.agent_id);
+  } catch {
+    bindAgentDetail.value = null;
+    message.warning(`agent_id=${bindForm.agent_id} 不存在`);
+  }
+}
+
+async function submitBindAgent() {
+  if (!bindForm.agent_id || !bindAgentDetail.value) {
+    message.error('请输入合法的 agent_id');
+    return;
+  }
+  await bindClubToAgent({
+    club_id: clubId.value,
+    agent_id: bindForm.agent_id,
+  });
+  message.success(`已绑定到代理 ${bindAgentDetail.value.display_name}`);
+  bindAgentOpen.value = false;
+}
+
 // 切 tab 时按需 lazy load (Overview 已经在 mount 时 loadDetail).
 function handleTabChange(key: number | string) {
   if (key === 'members' && members.value.length === 0) loadMembers();
@@ -162,6 +222,7 @@ function handleTabChange(key: number | string) {
   if (key === 'audit' && auditRows.value.length === 0) loadAudit(1);
   if (key === 'ledger' && ledgerRows.value.length === 0) loadLedger(1);
   if (key === 'revenue' && !revenue.value) loadRevenue();
+  if (key === 'wallet' && !clubWallet.value) loadWallet();
 }
 
 function handleBack() {
@@ -231,6 +292,9 @@ onMounted(loadDetail);
         <Button type="primary" :loading="detailLoading" @click="loadDetail">
           刷新
         </Button>
+      </Space>
+      <Space>
+        <Button v-if="detail" @click="openBindAgent">绑定代理</Button>
       </Space>
     </div>
 
@@ -455,12 +519,84 @@ onMounted(loadDetail);
         </Card>
       </TabPane>
 
+      <!-- Wallet (P-revenue-runtime: 真实钱包余额) -->
+      <TabPane key="wallet" tab="资金池">
+        <Alert
+          type="success"
+          message="P-revenue-runtime: 实时分账钱包"
+          description="每一手抽水按 game_revenue_share_rule 实时拆账, 俱乐部份额直接入此钱包. 玩家在本俱乐部内的余额隔离 (不跨 club)."
+          show-icon
+          class="mb-4"
+        />
+        <div v-if="clubWallet" class="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <Card title="俱乐部可用余额">
+            <Statistic
+              :value="clubWallet.available_balance"
+              :value-style="{
+                color: clubWallet.available_balance >= 0 ? '#3f8600' : '#cf1322',
+              }"
+            />
+            <Typography.Text type="secondary" class="mt-2 block text-xs">
+              {{ clubWallet.currency_type }}
+            </Typography.Text>
+          </Card>
+          <Card title="历史累计">
+            <Statistic title="抽水入账" :value="clubWallet.total_rake_received" />
+            <Statistic
+              title="出账"
+              :value="clubWallet.total_paid_out"
+              class="mt-2"
+              :value-style="{ color: '#cf1322' }"
+            />
+          </Card>
+          <Card title="冻结 / 版本">
+            <Statistic title="frozen" :value="clubWallet.frozen_balance" />
+            <Typography.Text type="secondary" class="mt-2 block text-xs">
+              version: {{ clubWallet.version }} · 更新:
+              {{ clubWallet.updated_at ? formatDateTime(clubWallet.updated_at) : '-' }}
+            </Typography.Text>
+          </Card>
+        </div>
+        <Card class="mt-4" title="会员钱包 (本俱乐部隔离)">
+          <Alert
+            v-if="memberWallets.length === 0 && !walletLoading"
+            type="info"
+            message="还没有会员钱包记录. settleHand 时会自动创建零余额行 + UPSERT."
+            show-icon
+            class="mb-2"
+          />
+          <Table
+            :data-source="memberWallets"
+            :loading="walletLoading"
+            :pagination="{ pageSize: 20 }"
+            :row-key="(row: any) => `${row.club_id}-${row.user_id}-${row.currency_type}`"
+            size="small"
+            :columns="[
+              { title: 'User ID', dataIndex: 'user_id', width: 140 },
+              { title: 'Currency', dataIndex: 'currency_type', width: 110 },
+              { title: '可用余额', dataIndex: 'available_balance', width: 120 },
+              { title: '冻结', dataIndex: 'frozen_balance', width: 100 },
+              { title: '净盈亏', dataIndex: 'win_loss_total', width: 130 },
+              { title: '累计买入', dataIndex: 'buy_in_total', width: 120 },
+              { title: '累计兑出', dataIndex: 'cash_out_total', width: 120 },
+              { title: 'Version', dataIndex: 'version', width: 90 },
+              {
+                title: '更新',
+                dataIndex: 'updated_at',
+                width: 170,
+                customRender: ({ value }) => (value ? formatDateTime(value) : '-'),
+              },
+            ]"
+          />
+        </Card>
+      </TabPane>
+
       <!-- Revenue (read-only summary) -->
       <TabPane key="revenue" tab="抽水 / 利润">
         <Alert
           type="info"
-          message="只读抽水统计 (read-only revenue summary)"
-          description="当前数据完全从 game_ledger_entry 聚合, 不是钱包余额. 真实'俱乐部资金池 + 代理分成 + 结算周期'模型见 GAME_REVENUE_SHARE_SPEC.md (v1.1+)."
+          message="抽水流水统计 (game_ledger_entry 聚合视角)"
+          description="本视图来自 ledger 聚合, 包含历史 rake_take (V009 前) 和 club_share (V009 后实时分账). 当前真实余额请看'资金池' tab."
           show-icon
           class="mb-4"
         />
@@ -501,5 +637,35 @@ onMounted(loadDetail);
         </Card>
       </TabPane>
     </Tabs>
+
+    <!-- Bind agent modal -->
+    <Modal
+      v-model:open="bindAgentOpen"
+      :title="`绑定俱乐部 #${clubId} 到代理`"
+      width="560"
+      :destroy-on-close="true"
+      @ok="submitBindAgent"
+    >
+      <Alert
+        type="warning"
+        message="绑定 = 1:1 替换. 该 club 之前如果绑了别的代理, 会被覆盖. 历史 ledger 不动."
+        show-icon
+        class="mb-4"
+      />
+      <Form :label-col="{ span: 7 }">
+        <FormItem label="Agent ID" required>
+          <Space>
+            <InputNumber v-model:value="bindForm.agent_id" :min="1" />
+            <Button size="small" @click="lookupAgent">查询代理</Button>
+          </Space>
+        </FormItem>
+        <FormItem v-if="bindAgentDetail" label="代理信息">
+          <Tag color="blue">{{ bindAgentDetail.display_name }}</Tag>
+          <span class="ml-2 text-gray-500 text-xs">
+            level={{ bindAgentDetail.level }} status={{ bindAgentDetail.status }}
+          </span>
+        </FormItem>
+      </Form>
+    </Modal>
   </Page>
 </template>

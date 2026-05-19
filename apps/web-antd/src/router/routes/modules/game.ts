@@ -48,6 +48,17 @@ const routes: RouteRecordRaw[] = [
       hideInMenu: true,
     },
   },
+  {
+    path: '/game/agent/detail',
+    component: () => import('#/views/game/agent/detail/index.vue'),
+    name: 'GameAgentDetail',
+    meta: {
+      title: '代理详情',
+      icon: 'lucide:user-cog',
+      activePath: '/game/agent',
+      hideInMenu: true,
+    },
+  },
 ];
 
 export default routes;
