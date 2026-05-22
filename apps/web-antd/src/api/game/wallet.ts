@@ -52,11 +52,16 @@ export namespace GameWalletApi {
 
 const BASE = '/game/wallets';
 
-// OPS-B: admin 充值 / 扣账 入参
+// G-WALLET-A + DBCTX Phase A: admin 人工调账入参.
+//   - request_id: 必填. 幂等键 (UUID/工单号); 同 source_type 内 UNIQUE, 重复不重复加钱.
+//   - reason: 必填. 短分类原因 (入 wallet_ledger.reason, 给流水视图).
+//   - remark: 可选. 自由备注 (拼到 reason 后).
 export interface MemberWalletAdjustBody {
   amount: number;
   currency_type?: null | string;
-  note?: null | string;
+  request_id: string;
+  reason: string;
+  remark?: null | string;
 }
 
 export function getClubWallet(clubId: number, currencyType?: string) {

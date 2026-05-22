@@ -104,7 +104,7 @@ const bindAgentDetail = ref<GameAgentApi.AgentRow | null>(null);
 const adjustOpen = ref(false);
 const adjustMode = ref<'deduct' | 'topup'>('topup');
 const adjustTargetUserId = ref(0);
-const adjustForm = reactive({ amount: 0, note: '' });
+const adjustForm = reactive({ amount: 0, reason: '', remark: '' });
 
 async function loadDetail() {
   if (!clubId.value) return;
@@ -228,19 +228,23 @@ async function submitBindAgent() {
 }
 
 // OPS-B: 给会员充值 / 扣账
+function resetAdjustForm() {
+  adjustForm.amount = 0;
+  adjustForm.reason = '';
+  adjustForm.remark = '';
+}
+
 function openTopupModal(userId: number) {
   adjustMode.value = 'topup';
   adjustTargetUserId.value = userId;
-  adjustForm.amount = 0;
-  adjustForm.note = '';
+  resetAdjustForm();
   adjustOpen.value = true;
 }
 
 function openDeductModal(userId: number) {
   adjustMode.value = 'deduct';
   adjustTargetUserId.value = userId;
-  adjustForm.amount = 0;
-  adjustForm.note = '';
+  resetAdjustForm();
   adjustOpen.value = true;
 }
 
@@ -249,11 +253,17 @@ async function submitAdjust() {
     message.error('amount 必须 > 0');
     return;
   }
+  if (!adjustForm.reason.trim()) {
+    message.error('reason 必填');
+    return;
+  }
   const fn = adjustMode.value === 'topup' ? topupMemberWallet : deductMemberWallet;
   try {
     await fn(clubId.value, adjustTargetUserId.value, {
       amount: adjustForm.amount,
-      note: adjustForm.note.trim() || null,
+      request_id: crypto.randomUUID(),
+      reason: adjustForm.reason.trim(),
+      remark: adjustForm.remark.trim() || null,
     });
     message.success(adjustMode.value === 'topup' ? '充值成功' : '扣账成功');
     adjustOpen.value = false;
@@ -741,10 +751,16 @@ onMounted(loadDetail);
             style="width: 100%"
           />
         </FormItem>
+        <FormItem label="原因" required>
+          <Input
+            v-model:value="adjustForm.reason"
+            placeholder="必填: 活动补偿 / 测试上分 / 风控扣回 等短分类原因"
+          />
+        </FormItem>
         <FormItem label="备注">
           <Input
-            v-model:value="adjustForm.note"
-            placeholder="可选: 客诉单号 / 上分 / 下分 / 内部转账理由"
+            v-model:value="adjustForm.remark"
+            placeholder="可选: 工单号 / 操作附言"
           />
         </FormItem>
       </Form>
