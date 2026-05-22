@@ -419,6 +419,7 @@ onMounted(loadDetail);
               { title: '角色', dataIndex: 'role', width: 110 },
               { title: 'User ID', dataIndex: 'user_id', width: 160 },
               { title: '加入时间', dataIndex: 'joined_at', width: 200 },
+              { title: '操作', dataIndex: 'action', width: 160 },
             ]"
           >
             <template #bodyCell="{ column, record }">
@@ -429,6 +430,23 @@ onMounted(loadDetail);
               </template>
               <template v-else-if="column.dataIndex === 'joined_at'">
                 {{ record.joined_at ? formatDateTime(record.joined_at) : '-' }}
+              </template>
+              <template v-else-if="column.dataIndex === 'action'">
+                <Button
+                  size="small"
+                  type="link"
+                  @click="openTopupModal(record.user_id)"
+                >
+                  上分
+                </Button>
+                <Button
+                  danger
+                  size="small"
+                  type="link"
+                  @click="openDeductModal(record.user_id)"
+                >
+                  下分
+                </Button>
               </template>
             </template>
           </Table>
