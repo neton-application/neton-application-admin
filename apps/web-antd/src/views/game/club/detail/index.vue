@@ -25,6 +25,7 @@ import {
   InputNumber,
   message,
   Modal,
+  Select,
   Space,
   Statistic,
   Switch,
@@ -54,6 +55,7 @@ import {
   batchCreateAutoPlayers,
   fillAutoPlayers,
   listAutoPlayers,
+  listClubRooms,
   type GameAutoPlayerApi,
 } from '#/api/game/auto-player';
 
@@ -294,7 +296,10 @@ function handleTabChange(key: number | string) {
   if (key === 'ledger' && ledgerRows.value.length === 0) loadLedger(1);
   if (key === 'revenue' && !revenue.value) loadRevenue();
   if (key === 'wallet' && !clubWallet.value) loadWallet();
-  if (key === 'auto_player' && autoPlayers.value.length === 0) loadAutoPlayers();
+  if (key === 'auto_player') {
+    if (autoPlayers.value.length === 0) loadAutoPlayers();
+    loadClubRooms();
+  }
 }
 
 // 陪玩机器人 (admin 专属；玩家端无感)
@@ -310,6 +315,22 @@ async function loadAutoPlayers() {
     autoPlayers.value = await listAutoPlayers(clubId.value);
   } finally {
     autoPlayersLoading.value = false;
+  }
+}
+
+// 可用房间下拉 (补位用)。
+const clubRooms = ref<GameAutoPlayerApi.ClubRoomOption[]>([]);
+async function loadClubRooms() {
+  if (!clubId.value) return;
+  try {
+    clubRooms.value = await listClubRooms(clubId.value);
+    // 默认选第一个可用房间，避免空选 / 误填。
+    const first = clubRooms.value[0];
+    if (!fillForm.roomId && first) {
+      fillForm.roomId = first.room_id;
+    }
+  } catch {
+    clubRooms.value = [];
   }
 }
 
@@ -336,7 +357,7 @@ async function submitBatchCreate() {
 const fillForm = reactive({ roomId: 0, count: 3 });
 async function submitFill() {
   if (!fillForm.roomId) {
-    message.error('请输入 room_id');
+    message.error('请先选择房间');
     return;
   }
   try {
@@ -345,6 +366,7 @@ async function submitFill() {
       count: fillForm.count,
     });
     message.success(`补位 ${r.seated}，跳过 ${r.skipped}`);
+    await Promise.all([loadAutoPlayers(), loadClubRooms()]);
   } catch (e: any) {
     message.error(`补位失败: ${e?.message ?? e}`);
   }
@@ -821,7 +843,17 @@ onMounted(loadDetail);
             <Button :loading="autoPlayersLoading" @click="loadAutoPlayers">刷新</Button>
             <span class="mx-2 text-gray-400">|</span>
             <span class="text-gray-500 text-sm">给房间补位：</span>
-            <InputNumber v-model:value="fillForm.roomId" :min="1" placeholder="room_id" style="width: 120px" />
+            <Select
+              v-model:value="fillForm.roomId"
+              placeholder="选择房间"
+              style="width: 240px"
+              :options="clubRooms.map((r) => ({
+                value: r.room_id,
+                label: `#${r.room_id} ${r.label}（${r.seated_count}/${r.max_seats}）`,
+              }))"
+              :notFoundContent="clubRooms.length === 0 ? '本俱乐部暂无可用房间' : undefined"
+            />
+            <Button size="small" @click="loadClubRooms">刷新房间</Button>
             <InputNumber v-model:value="fillForm.count" :min="1" :max="9" style="width: 80px" />
             <Button @click="submitFill">补位并开局</Button>
           </div>

@@ -44,6 +44,14 @@ export namespace GameAutoPlayerApi {
     real_player_count: number;
     auto_player_count: number;
   }
+
+  export interface ClubRoomOption {
+    room_id: number;
+    label: string;
+    max_seats: number;
+    seated_count: number;
+    state: number;
+  }
 }
 
 const BASE = '/game/clubs';
@@ -95,6 +103,13 @@ export function fillAutoPlayers(
   return requestClient.post<GameAutoPlayerApi.FillResult>(
     `${BASE}/${clubId}/auto-players/fill`,
     body,
+  );
+}
+
+// 列俱乐部可用房间 (补位下拉用，避免手输 room_id 误填俱乐部 id / 残桌 id)。
+export function listClubRooms(clubId: number) {
+  return requestClient.get<GameAutoPlayerApi.ClubRoomOption[]>(
+    `${BASE}/${clubId}/rooms`,
   );
 }
 
