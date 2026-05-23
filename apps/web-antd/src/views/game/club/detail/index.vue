@@ -832,9 +832,11 @@ onMounted(loadDetail);
             row-key="user_id"
             size="small"
             :columns="[
-              { title: 'User ID', dataIndex: 'user_id', width: 160 },
-              { title: '托管启用', dataIndex: 'auto_play_enabled', width: 100 },
-              { title: '风格', dataIndex: 'auto_play_profile', width: 120 },
+              { title: 'User ID', dataIndex: 'user_id', width: 140 },
+              { title: '托管启用', dataIndex: 'auto_play_enabled', width: 90 },
+              { title: '风格', dataIndex: 'auto_play_profile', width: 90 },
+              { title: '所在房间', dataIndex: 'current_room_id', width: 100 },
+              { title: '房间类型', dataIndex: 'current_room_label', width: 160 },
             ]"
           >
             <template #bodyCell="{ column, record }">
@@ -845,6 +847,15 @@ onMounted(loadDetail);
               </template>
               <template v-else-if="column.dataIndex === 'auto_play_profile'">
                 {{ record.auto_play_profile ?? 'normal' }}
+              </template>
+              <template v-else-if="column.dataIndex === 'current_room_id'">
+                <Tag v-if="record.current_room_id" color="blue">
+                  {{ record.current_room_id }}
+                </Tag>
+                <span v-else class="text-gray-400">未在桌</span>
+              </template>
+              <template v-else-if="column.dataIndex === 'current_room_label'">
+                {{ record.current_room_label ?? '-' }}
               </template>
             </template>
           </Table>

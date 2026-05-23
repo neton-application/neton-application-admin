@@ -16,6 +16,8 @@ export namespace GameAutoPlayerApi {
     is_auto_player: boolean;
     auto_play_enabled: boolean;
     auto_play_profile?: null | string;
+    current_room_id?: null | number;
+    current_room_label?: null | string;
   }
 
   export interface CreatedAutoPlayer {
