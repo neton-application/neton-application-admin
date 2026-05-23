@@ -27,6 +27,7 @@ import {
   Modal,
   Space,
   Statistic,
+  Switch,
   Table,
   Tabs,
   TabPane,
@@ -49,6 +50,12 @@ import {
   getClubWallet,
   topupMemberWallet,
 } from '#/api/game/wallet';
+import {
+  batchCreateAutoPlayers,
+  fillAutoPlayers,
+  listAutoPlayers,
+  type GameAutoPlayerApi,
+} from '#/api/game/auto-player';
 
 /**
  * 俱乐部详情页 (P-club-game-center) — 俱乐部老板视角入口.
@@ -287,6 +294,60 @@ function handleTabChange(key: number | string) {
   if (key === 'ledger' && ledgerRows.value.length === 0) loadLedger(1);
   if (key === 'revenue' && !revenue.value) loadRevenue();
   if (key === 'wallet' && !clubWallet.value) loadWallet();
+  if (key === 'auto_player' && autoPlayers.value.length === 0) loadAutoPlayers();
+}
+
+// 陪玩机器人 (admin 专属；玩家端无感)
+const autoPlayers = ref<GameAutoPlayerApi.AutoPlayerRow[]>([]);
+const autoPlayersLoading = ref(false);
+const batchOpen = ref(false);
+const batchForm = reactive({ count: 6, initialBalance: 5000, autoPlayEnabled: true });
+
+async function loadAutoPlayers() {
+  if (!clubId.value) return;
+  autoPlayersLoading.value = true;
+  try {
+    autoPlayers.value = await listAutoPlayers(clubId.value);
+  } finally {
+    autoPlayersLoading.value = false;
+  }
+}
+
+async function submitBatchCreate() {
+  if (batchForm.count < 1 || batchForm.count > 20) {
+    message.error('数量需 1~20');
+    return;
+  }
+  try {
+    const r = await batchCreateAutoPlayers(clubId.value, {
+      request_id: `batch-${clubId.value}-${Date.now()}`,
+      count: batchForm.count,
+      initial_balance: batchForm.initialBalance,
+      auto_play_enabled: batchForm.autoPlayEnabled,
+    });
+    message.success(`创建成功 ${r.created_count}，失败 ${r.failed_count}`);
+    batchOpen.value = false;
+    await loadAutoPlayers();
+  } catch (e: any) {
+    message.error(`创建失败: ${e?.message ?? e}`);
+  }
+}
+
+const fillForm = reactive({ roomId: 0, count: 3 });
+async function submitFill() {
+  if (!fillForm.roomId) {
+    message.error('请输入 room_id');
+    return;
+  }
+  try {
+    const r = await fillAutoPlayers(clubId.value, {
+      room_id: fillForm.roomId,
+      count: fillForm.count,
+    });
+    message.success(`补位 ${r.seated}，跳过 ${r.skipped}`);
+  } catch (e: any) {
+    message.error(`补位失败: ${e?.message ?? e}`);
+  }
 }
 
 function handleBack() {
@@ -744,7 +805,79 @@ onMounted(loadDetail);
           <div v-else>加载中…</div>
         </Card>
       </TabPane>
+
+      <!-- 陪玩机器人 (admin 专属；玩家端无感) -->
+      <TabPane key="auto_player" tab="陪玩机器人">
+        <Alert
+          type="info"
+          message="陪玩机器人 (auto-player)"
+          description="机器人是 normal member + club_member 标记，玩家端完全无感(模拟真人)。批量创建会生成账号+俱乐部成员+钱包初始余额。给房间补位会让机器人入座并自动开局。"
+          show-icon
+          class="mb-4"
+        />
+        <Card>
+          <div class="mb-3 flex flex-wrap items-center gap-2">
+            <Button type="primary" @click="batchOpen = true">批量创建机器人</Button>
+            <Button :loading="autoPlayersLoading" @click="loadAutoPlayers">刷新</Button>
+            <span class="mx-2 text-gray-400">|</span>
+            <span class="text-gray-500 text-sm">给房间补位：</span>
+            <InputNumber v-model:value="fillForm.roomId" :min="1" placeholder="room_id" style="width: 120px" />
+            <InputNumber v-model:value="fillForm.count" :min="1" :max="9" style="width: 80px" />
+            <Button @click="submitFill">补位并开局</Button>
+          </div>
+          <Table
+            :data-source="autoPlayers"
+            :loading="autoPlayersLoading"
+            :pagination="{ pageSize: 50 }"
+            row-key="user_id"
+            size="small"
+            :columns="[
+              { title: 'User ID', dataIndex: 'user_id', width: 160 },
+              { title: '托管启用', dataIndex: 'auto_play_enabled', width: 100 },
+              { title: '风格', dataIndex: 'auto_play_profile', width: 120 },
+            ]"
+          >
+            <template #bodyCell="{ column, record }">
+              <template v-if="column.dataIndex === 'auto_play_enabled'">
+                <Tag :color="record.auto_play_enabled ? 'green' : 'default'">
+                  {{ record.auto_play_enabled ? '启用' : '停用' }}
+                </Tag>
+              </template>
+              <template v-else-if="column.dataIndex === 'auto_play_profile'">
+                {{ record.auto_play_profile ?? 'normal' }}
+              </template>
+            </template>
+          </Table>
+        </Card>
+      </TabPane>
     </Tabs>
+
+    <!-- 批量创建陪玩机器人 modal -->
+    <Modal
+      v-model:open="batchOpen"
+      title="批量创建陪玩机器人"
+      width="480"
+      :destroy-on-close="true"
+      @ok="submitBatchCreate"
+    >
+      <Alert
+        type="warning"
+        message="一次最多 20 个。每个机器人 = 平台账号(不可登录) + 俱乐部成员 + 钱包初始余额。"
+        show-icon
+        class="mb-4"
+      />
+      <Form :label-col="{ span: 7 }">
+        <FormItem label="创建数量" required>
+          <InputNumber v-model:value="batchForm.count" :min="1" :max="20" style="width: 100%" />
+        </FormItem>
+        <FormItem label="初始余额" required>
+          <InputNumber v-model:value="batchForm.initialBalance" :min="0" :max="100_000_000" style="width: 100%" />
+        </FormItem>
+        <FormItem label="立即启用托管">
+          <Switch v-model:checked="batchForm.autoPlayEnabled" />
+        </FormItem>
+      </Form>
+    </Modal>
 
     <!-- OPS-B: 会员充值 / 扣账 modal -->
     <Modal
