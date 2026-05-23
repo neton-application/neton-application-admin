@@ -54,6 +54,7 @@ import {
 import {
   batchCreateAutoPlayers,
   fillAutoPlayers,
+  leaveAutoPlayers,
   listAutoPlayers,
   listClubRooms,
   type GameAutoPlayerApi,
@@ -369,6 +370,20 @@ async function submitFill() {
     await Promise.all([loadAutoPlayers(), loadClubRooms()]);
   } catch (e: any) {
     message.error(`补位失败: ${e?.message ?? e}`);
+  }
+}
+
+async function submitLeave() {
+  if (!fillForm.roomId) {
+    message.error('请先选择房间');
+    return;
+  }
+  try {
+    const r = await leaveAutoPlayers(clubId.value, { room_id: fillForm.roomId });
+    message.success(`已让 ${r.left} 个机器人离开`);
+    await Promise.all([loadAutoPlayers(), loadClubRooms()]);
+  } catch (e: any) {
+    message.error(`清空失败: ${e?.message ?? e}`);
   }
 }
 
@@ -856,6 +871,7 @@ onMounted(loadDetail);
             <Button size="small" @click="loadClubRooms">刷新房间</Button>
             <InputNumber v-model:value="fillForm.count" :min="1" :max="9" style="width: 80px" />
             <Button @click="submitFill">补位并开局</Button>
+            <Button danger @click="submitLeave">清空机器人</Button>
           </div>
           <Table
             :data-source="autoPlayers"

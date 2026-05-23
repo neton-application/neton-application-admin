@@ -113,6 +113,14 @@ export function listClubRooms(clubId: number) {
   );
 }
 
+// 让某未开始房间的自动玩家全部离开 (清空机器人；进行中的牌局会被拒)。
+export function leaveAutoPlayers(clubId: number, body: { room_id: number }) {
+  return requestClient.post<{ room_id: number; left: number }>(
+    `${BASE}/${clubId}/auto-players/leave`,
+    body,
+  );
+}
+
 // 查某房间 real/auto 在座拆分 (仅 admin 可见)。
 export function getRoomSeatBreakdown(roomId: number) {
   return requestClient.get<GameAutoPlayerApi.SeatBreakdown>(
