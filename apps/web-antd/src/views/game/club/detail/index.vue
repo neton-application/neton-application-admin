@@ -76,6 +76,8 @@ const detail = ref<GameClubApi.ClubDetail | null>(null);
 
 const membersLoading = ref(false);
 const members = ref<GameClubApi.ClubMember[]>([]);
+// user_id → club_credit 可用余额 (与成员列表同源展示, 来自 member wallet)
+const memberBalances = ref<Record<number, number>>({});
 
 const tablesLoading = ref(false);
 const tables = ref<GameTableApi.TableListItem[]>([]);
@@ -121,6 +123,10 @@ async function loadMembers() {
   membersLoading.value = true;
   try {
     members.value = await getClubMembers(clubId.value);
+    const wallets = await getClubMemberWallets(clubId.value, 200);
+    const m: Record<number, number> = {};
+    for (const w of wallets) m[w.user_id] = w.available_balance;
+    memberBalances.value = m;
   } finally {
     membersLoading.value = false;
   }
@@ -267,7 +273,7 @@ async function submitAdjust() {
     });
     message.success(adjustMode.value === 'topup' ? '充值成功' : '扣账成功');
     adjustOpen.value = false;
-    await loadWallet();
+    await Promise.all([loadWallet(), loadMembers()]);
   } catch (e: any) {
     message.error(`操作失败: ${e?.message ?? e}`);
   }
@@ -418,6 +424,7 @@ onMounted(loadDetail);
             :columns="[
               { title: '角色', dataIndex: 'role', width: 110 },
               { title: 'User ID', dataIndex: 'user_id', width: 160 },
+              { title: '余额', dataIndex: 'balance', width: 120 },
               { title: '加入时间', dataIndex: 'joined_at', width: 200 },
               { title: '操作', dataIndex: 'action', width: 160 },
             ]"
@@ -427,6 +434,9 @@ onMounted(loadDetail);
                 <Tag :color="roleLabel(record.role).color">
                   {{ roleLabel(record.role).text }}
                 </Tag>
+              </template>
+              <template v-else-if="column.dataIndex === 'balance'">
+                {{ (memberBalances[record.user_id] ?? 0).toLocaleString() }}
               </template>
               <template v-else-if="column.dataIndex === 'joined_at'">
                 {{ record.joined_at ? formatDateTime(record.joined_at) : '-' }}
