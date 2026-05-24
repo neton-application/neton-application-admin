@@ -91,6 +91,53 @@ export namespace GameClubApi {
     created_from?: number;
     created_to?: number;
   }
+
+  // 俱乐部级设置（spec GAME_CLUB_ROOM_TEMPLATE_SPEC §2.1）
+  export interface ClubSettings {
+    play_mode: string; // standard / crazy
+    auto_play_enabled: boolean;
+    orchestrator_enabled: boolean;
+    auto_player_pool_limit: number;
+  }
+
+  // 牌桌组 RoomTemplate（§2.2）
+  export interface RoomTemplate {
+    template_id: number;
+    club_id: number;
+    game_type: string;
+    name: string;
+    enabled: boolean;
+    small_blind: number;
+    big_blind: number;
+    buy_in_min: number;
+    buy_in_max: number;
+    max_seats: number;
+    min_active_rooms: number;
+    max_active_rooms: number;
+    expand_when_occupancy_percent: number;
+    target_seated_count: number;
+    max_auto_players_per_room: number;
+    auto_play_difficulty: number;
+    difficulty_spread: number;
+    play_mode: string;
+    deck_mode: string;
+    currency_type: string;
+    insurance_enabled: boolean;
+    sort_order: number;
+    created_at: number;
+    updated_at: number;
+  }
+
+  // 创建/更新请求（update 忽略 game_type）
+  export type RoomTemplateInput = Omit<
+    RoomTemplate,
+    'club_id' | 'created_at' | 'template_id' | 'updated_at'
+  >;
+
+  export interface RoomTemplateListResponse {
+    club_id: number;
+    templates: RoomTemplate[];
+  }
 }
 
 const BASE = '/game/clubs';
@@ -116,5 +163,57 @@ export function getClubMembers(clubId: number) {
 export function getClubRevenueSummary(clubId: number) {
   return requestClient.get<GameClubApi.RevenueSummary>(
     `${BASE}/${clubId}/revenue-summary`,
+  );
+}
+
+// ---------- 俱乐部设置 + 牌桌组 RoomTemplate ----------
+
+export function getClubSettings(clubId: number) {
+  return requestClient.get<GameClubApi.ClubSettings>(
+    `${BASE}/${clubId}/settings`,
+  );
+}
+
+export function updateClubSettings(
+  clubId: number,
+  data: GameClubApi.ClubSettings,
+) {
+  return requestClient.put<GameClubApi.ClubSettings>(
+    `${BASE}/${clubId}/settings`,
+    data,
+  );
+}
+
+export async function getRoomTemplates(clubId: number) {
+  const data = await requestClient.get<GameClubApi.RoomTemplateListResponse>(
+    `${BASE}/${clubId}/room-templates`,
+  );
+  return data.templates ?? [];
+}
+
+export function createRoomTemplate(
+  clubId: number,
+  data: GameClubApi.RoomTemplateInput,
+) {
+  return requestClient.post<GameClubApi.RoomTemplate>(
+    `${BASE}/${clubId}/room-templates`,
+    data,
+  );
+}
+
+export function updateRoomTemplate(
+  clubId: number,
+  templateId: number,
+  data: GameClubApi.RoomTemplateInput,
+) {
+  return requestClient.put<GameClubApi.RoomTemplate>(
+    `${BASE}/${clubId}/room-templates/${templateId}`,
+    data,
+  );
+}
+
+export function deleteRoomTemplate(clubId: number, templateId: number) {
+  return requestClient.delete<void>(
+    `${BASE}/${clubId}/room-templates/${templateId}`,
   );
 }

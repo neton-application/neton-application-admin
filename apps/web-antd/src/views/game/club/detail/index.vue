@@ -38,9 +38,15 @@ import {
 
 import { bindClubToAgent, getAgentDetail } from '#/api/game/agent';
 import {
+  createRoomTemplate,
+  deleteRoomTemplate,
   getClubDetail,
   getClubMembers,
   getClubRevenueSummary,
+  getClubSettings,
+  getRoomTemplates,
+  updateClubSettings,
+  updateRoomTemplate,
 } from '#/api/game/club';
 import { getTablePage } from '#/api/game/table';
 import { getLedgerPage } from '#/api/game/ledger';
@@ -241,6 +247,210 @@ async function submitBindAgent() {
   });
   message.success(`已绑定到代理 ${bindAgentDetail.value.display_name}`);
   bindAgentOpen.value = false;
+}
+
+// ===== 俱乐部设置（club 级 + 牌桌组 RoomTemplate）=====
+const settingsOpen = ref(false);
+const settingsLoading = ref(false);
+const clubSettings = reactive<GameClubApi.ClubSettings>({
+  play_mode: 'standard',
+  auto_play_enabled: false,
+  orchestrator_enabled: false,
+  auto_player_pool_limit: 0,
+});
+const templates = ref<GameClubApi.RoomTemplate[]>([]);
+
+// 牌桌组按 game_type 分组展示
+const templatesByType = computed(() => {
+  const groups: Record<string, GameClubApi.RoomTemplate[]> = {};
+  for (const t of templates.value) {
+    (groups[t.game_type] ||= []).push(t);
+  }
+  return Object.entries(groups).map(([gameType, list]) => ({ gameType, list }));
+});
+
+const GAME_TYPE_LABEL: Record<string, string> = {
+  texas_holdem: '德州扑克',
+  dou_dizhu: '斗地主',
+  zha_jin_hua: '炸金花',
+  niu_niu: '牛牛',
+};
+function gameTypeLabel(t: string) {
+  return GAME_TYPE_LABEL[t] ?? t;
+}
+
+async function openSettings() {
+  settingsOpen.value = true;
+  settingsLoading.value = true;
+  try {
+    const [s, tpls] = await Promise.all([
+      getClubSettings(clubId.value),
+      getRoomTemplates(clubId.value),
+    ]);
+    Object.assign(clubSettings, s);
+    templates.value = tpls;
+  } catch {
+    message.error('加载俱乐部设置失败');
+  } finally {
+    settingsLoading.value = false;
+  }
+}
+
+async function saveClubSettings() {
+  try {
+    await updateClubSettings(clubId.value, { ...clubSettings });
+    message.success('俱乐部设置已保存');
+  } catch {
+    message.error('保存失败');
+  }
+}
+
+async function reloadTemplates() {
+  templates.value = await getRoomTemplates(clubId.value);
+}
+
+// ----- 牌桌组 创建/编辑 modal -----
+const tplModalOpen = ref(false);
+const tplEditingId = ref<null | number>(null);
+const tplForm = reactive<GameClubApi.RoomTemplateInput>({
+  game_type: 'texas_holdem',
+  name: '',
+  enabled: true,
+  small_blind: 1,
+  big_blind: 2,
+  buy_in_min: 100,
+  buy_in_max: 400,
+  max_seats: 6,
+  min_active_rooms: 2,
+  max_active_rooms: 8,
+  expand_when_occupancy_percent: 80,
+  target_seated_count: 3,
+  max_auto_players_per_room: 3,
+  auto_play_difficulty: 40,
+  difficulty_spread: 20,
+  play_mode: 'standard',
+  deck_mode: 'fair_random',
+  currency_type: 'club_credit',
+  insurance_enabled: false,
+  sort_order: 0,
+});
+
+function openTplCreate(gameType = 'texas_holdem') {
+  tplEditingId.value = null;
+  Object.assign(tplForm, {
+    game_type: gameType,
+    name: '',
+    enabled: true,
+    small_blind: 1,
+    big_blind: 2,
+    buy_in_min: 100,
+    buy_in_max: 400,
+    max_seats: 6,
+    min_active_rooms: 2,
+    max_active_rooms: 8,
+    expand_when_occupancy_percent: 80,
+    target_seated_count: 3,
+    max_auto_players_per_room: 3,
+    auto_play_difficulty: 40,
+    difficulty_spread: 20,
+    play_mode: 'standard',
+    deck_mode: 'fair_random',
+    currency_type: 'club_credit',
+    insurance_enabled: false,
+    sort_order: 0,
+  });
+  tplModalOpen.value = true;
+}
+
+function openTplEdit(t: GameClubApi.RoomTemplate) {
+  tplEditingId.value = t.template_id;
+  Object.assign(tplForm, {
+    game_type: t.game_type,
+    name: t.name,
+    enabled: t.enabled,
+    small_blind: t.small_blind,
+    big_blind: t.big_blind,
+    buy_in_min: t.buy_in_min,
+    buy_in_max: t.buy_in_max,
+    max_seats: t.max_seats,
+    min_active_rooms: t.min_active_rooms,
+    max_active_rooms: t.max_active_rooms,
+    expand_when_occupancy_percent: t.expand_when_occupancy_percent,
+    target_seated_count: t.target_seated_count,
+    max_auto_players_per_room: t.max_auto_players_per_room,
+    auto_play_difficulty: t.auto_play_difficulty,
+    difficulty_spread: t.difficulty_spread,
+    play_mode: t.play_mode,
+    deck_mode: t.deck_mode,
+    currency_type: t.currency_type,
+    insurance_enabled: t.insurance_enabled,
+    sort_order: t.sort_order,
+  });
+  tplModalOpen.value = true;
+}
+
+async function saveTpl() {
+  if (!tplForm.name.trim()) {
+    message.error('请填写房型名称');
+    return;
+  }
+  // UI 层提示同盲注重复(DB 不硬拦)。
+  const dup = templates.value.find(
+    (t) =>
+      t.template_id !== tplEditingId.value &&
+      t.game_type === tplForm.game_type &&
+      t.small_blind === tplForm.small_blind &&
+      t.big_blind === tplForm.big_blind,
+  );
+  if (dup && tplEditingId.value === null) {
+    const ok = await new Promise<boolean>((resolve) => {
+      Modal.confirm({
+        title: '盲注重复',
+        content: `该俱乐部已有 ${tplForm.small_blind}/${tplForm.big_blind} 的「${dup.name}」，确认继续创建？`,
+        onOk: () => resolve(true),
+        onCancel: () => resolve(false),
+      });
+    });
+    if (!ok) return;
+  }
+  try {
+    if (tplEditingId.value === null) {
+      await createRoomTemplate(clubId.value, { ...tplForm });
+      message.success('房型已创建');
+    } else {
+      await updateRoomTemplate(clubId.value, tplEditingId.value, { ...tplForm });
+      message.success('房型已更新');
+    }
+    tplModalOpen.value = false;
+    await reloadTemplates();
+  } catch {
+    message.error('保存房型失败');
+  }
+}
+
+async function toggleTplEnabled(t: GameClubApi.RoomTemplate) {
+  try {
+    await updateRoomTemplate(clubId.value, t.template_id, {
+      ...t,
+      enabled: !t.enabled,
+    });
+    await reloadTemplates();
+  } catch {
+    message.error('操作失败');
+  }
+}
+
+function removeTpl(t: GameClubApi.RoomTemplate) {
+  Modal.confirm({
+    title: '删除房型',
+    content: `确认删除「${t.name}」？删除后不再开新桌，历史对局仍可追溯。`,
+    okButtonProps: { danger: true },
+    onOk: async () => {
+      await deleteRoomTemplate(clubId.value, t.template_id);
+      message.success('房型已删除');
+      await reloadTemplates();
+    },
+  });
 }
 
 // OPS-B: 给会员充值 / 扣账
@@ -456,6 +666,9 @@ onMounted(loadDetail);
         </Button>
       </Space>
       <Space>
+        <Button v-if="detail" type="primary" @click="openSettings">
+          俱乐部设置
+        </Button>
         <Button v-if="detail" @click="openBindAgent">绑定代理</Button>
       </Space>
     </div>
@@ -1013,6 +1226,210 @@ onMounted(loadDetail);
             level={{ bindAgentDetail.level }} status={{ bindAgentDetail.status }}
           </span>
         </FormItem>
+      </Form>
+    </Modal>
+
+    <!-- 俱乐部设置：club 级 + 牌局配置(牌桌组) -->
+    <Modal
+      v-model:open="settingsOpen"
+      title="俱乐部设置"
+      width="860px"
+      :footer="null"
+      destroy-on-close
+    >
+      <div v-if="settingsLoading" class="py-8 text-center text-gray-400">
+        加载中…
+      </div>
+      <template v-else>
+        <Card size="small" title="基础 / 自动玩家" class="mb-4">
+          <Form layout="vertical">
+            <div class="grid grid-cols-2 gap-x-6">
+              <FormItem label="玩法模式">
+                <Select
+                  v-model:value="clubSettings.play_mode"
+                  :options="[
+                    { value: 'standard', label: '标准 STANDARD' },
+                    { value: 'crazy', label: '疯狂 CRAZY' },
+                  ]"
+                />
+              </FormItem>
+              <FormItem label="自动玩家总上限 (0=不限)">
+                <InputNumber
+                  v-model:value="clubSettings.auto_player_pool_limit"
+                  :min="0"
+                  class="w-full"
+                />
+              </FormItem>
+              <FormItem label="启用陪玩">
+                <Switch v-model:checked="clubSettings.auto_play_enabled" />
+              </FormItem>
+              <FormItem label="启用自动编排(开桌/补位)">
+                <Switch v-model:checked="clubSettings.orchestrator_enabled" />
+              </FormItem>
+            </div>
+            <Button type="primary" @click="saveClubSettings">保存基础设置</Button>
+          </Form>
+        </Card>
+
+        <Card size="small" title="牌局配置（牌桌组）">
+          <template #extra>
+            <Button size="small" type="primary" @click="openTplCreate()">
+              + 新增房型
+            </Button>
+          </template>
+          <Empty
+            v-if="templates.length === 0"
+            description="还没有牌桌组，点「新增房型」创建"
+          />
+          <div
+            v-for="grp in templatesByType"
+            :key="grp.gameType"
+            class="mb-4"
+          >
+            <div class="mb-2 font-medium">{{ gameTypeLabel(grp.gameType) }}</div>
+            <Table
+              :data-source="grp.list"
+              :pagination="false"
+              row-key="template_id"
+              size="small"
+              :columns="[
+                { title: '房型名', dataIndex: 'name' },
+                { title: '盲注', dataIndex: 'blind', width: 90 },
+                { title: '桌数 min/max', dataIndex: 'rooms', width: 120 },
+                { title: '难度', dataIndex: 'difficulty', width: 100 },
+                { title: '操作', dataIndex: 'action', width: 180 },
+              ]"
+            >
+              <template #bodyCell="{ column, record }">
+                <template v-if="column.dataIndex === 'name'">
+                  {{ record.name }}
+                  <Tag v-if="!record.enabled" color="default">停用</Tag>
+                </template>
+                <template v-else-if="column.dataIndex === 'blind'">
+                  {{ record.small_blind }}/{{ record.big_blind }}
+                </template>
+                <template v-else-if="column.dataIndex === 'rooms'">
+                  {{ record.min_active_rooms }}/{{ record.max_active_rooms }}
+                </template>
+                <template v-else-if="column.dataIndex === 'difficulty'">
+                  {{ record.auto_play_difficulty }}±{{ record.difficulty_spread }}
+                </template>
+                <template v-else-if="column.dataIndex === 'action'">
+                  <Button
+                    type="link"
+                    size="small"
+                    @click="openTplEdit(record as GameClubApi.RoomTemplate)"
+                  >
+                    编辑
+                  </Button>
+                  <Button
+                    type="link"
+                    size="small"
+                    @click="toggleTplEnabled(record as GameClubApi.RoomTemplate)"
+                  >
+                    {{ record.enabled ? '停用' : '启用' }}
+                  </Button>
+                  <Button
+                    type="link"
+                    size="small"
+                    danger
+                    @click="removeTpl(record as GameClubApi.RoomTemplate)"
+                  >
+                    删除
+                  </Button>
+                </template>
+              </template>
+            </Table>
+          </div>
+        </Card>
+      </template>
+    </Modal>
+
+    <!-- 牌桌组 创建/编辑 -->
+    <Modal
+      v-model:open="tplModalOpen"
+      :title="tplEditingId === null ? '新增房型' : '编辑房型'"
+      width="720px"
+      ok-text="保存"
+      @ok="saveTpl"
+    >
+      <Form layout="vertical">
+        <div class="grid grid-cols-2 gap-x-6">
+          <FormItem label="游戏类型">
+            <Select
+              v-model:value="tplForm.game_type"
+              :disabled="tplEditingId !== null"
+              :options="[
+                { value: 'texas_holdem', label: '德州扑克' },
+                { value: 'dou_dizhu', label: '斗地主' },
+                { value: 'zha_jin_hua', label: '炸金花' },
+                { value: 'niu_niu', label: '牛牛' },
+              ]"
+            />
+          </FormItem>
+          <FormItem label="房型名称" required>
+            <Input v-model:value="tplForm.name" placeholder="如 德州 1/2 普通桌" />
+          </FormItem>
+          <FormItem label="小盲">
+            <InputNumber v-model:value="tplForm.small_blind" :min="1" class="w-full" />
+          </FormItem>
+          <FormItem label="大盲">
+            <InputNumber v-model:value="tplForm.big_blind" :min="1" class="w-full" />
+          </FormItem>
+          <FormItem label="最低买入">
+            <InputNumber v-model:value="tplForm.buy_in_min" :min="1" class="w-full" />
+          </FormItem>
+          <FormItem label="最高买入">
+            <InputNumber v-model:value="tplForm.buy_in_max" :min="1" class="w-full" />
+          </FormItem>
+          <FormItem label="座位数">
+            <InputNumber v-model:value="tplForm.max_seats" :min="2" :max="9" class="w-full" />
+          </FormItem>
+          <FormItem label="货币类型">
+            <Input v-model:value="tplForm.currency_type" />
+          </FormItem>
+          <FormItem label="最小牌桌数 (进来至少几桌, 空也算)">
+            <InputNumber v-model:value="tplForm.min_active_rooms" :min="0" :max="50" class="w-full" />
+          </FormItem>
+          <FormItem label="最大牌桌数 (自动扩桌上限)">
+            <InputNumber v-model:value="tplForm.max_active_rooms" :min="0" :max="50" class="w-full" />
+          </FormItem>
+          <FormItem label="扩桌占座率阈值 %">
+            <InputNumber
+              v-model:value="tplForm.expand_when_occupancy_percent"
+              :min="1"
+              :max="100"
+              class="w-full"
+            />
+          </FormItem>
+          <FormItem label="每桌目标在座">
+            <InputNumber v-model:value="tplForm.target_seated_count" :min="0" class="w-full" />
+          </FormItem>
+          <FormItem label="每桌陪玩上限">
+            <InputNumber v-model:value="tplForm.max_auto_players_per_room" :min="0" class="w-full" />
+          </FormItem>
+          <FormItem label="难度 (0-100)">
+            <InputNumber v-model:value="tplForm.auto_play_difficulty" :min="0" :max="100" class="w-full" />
+          </FormItem>
+          <FormItem label="难度浮动 ±">
+            <InputNumber v-model:value="tplForm.difficulty_spread" :min="0" :max="100" class="w-full" />
+          </FormItem>
+          <FormItem label="玩法模式">
+            <Select
+              v-model:value="tplForm.play_mode"
+              :options="[
+                { value: 'standard', label: '标准' },
+                { value: 'crazy', label: '疯狂' },
+              ]"
+            />
+          </FormItem>
+          <FormItem label="启用">
+            <Switch v-model:checked="tplForm.enabled" />
+          </FormItem>
+          <FormItem label="保险玩法">
+            <Switch v-model:checked="tplForm.insurance_enabled" />
+          </FormItem>
+        </div>
       </Form>
     </Modal>
   </Page>
