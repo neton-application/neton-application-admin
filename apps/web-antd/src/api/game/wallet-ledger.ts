@@ -39,6 +39,7 @@ export namespace GameWalletLedgerApi {
     source_id?: null | number;
     reason?: null | string;
     operator_user_id?: null | number;
+    match_id?: null | number;          // 对局 id（牌局相关流水带；人工上下分为 null）
     created_at: number;
   }
 

@@ -1293,6 +1293,7 @@ onMounted(loadDetail);
             align: 'right',
             customRender: ({ value }) => Number(value ?? 0).toLocaleString(),
           },
+          { title: '对局', dataIndex: 'match_id', width: 120 },
           { title: '原因', dataIndex: 'reason' },
         ]"
       >
@@ -1305,6 +1306,12 @@ onMounted(loadDetail);
               {{ record.direction >= 0 ? '+' : '-'
               }}{{ Number(record.amount ?? 0).toLocaleString() }}
             </span>
+          </template>
+          <template v-else-if="column.dataIndex === 'match_id'">
+            <Typography.Text v-if="record.match_id" copyable :content="String(record.match_id)">
+              #{{ record.match_id }}
+            </Typography.Text>
+            <span v-else>-</span>
           </template>
           <template v-else-if="column.dataIndex === 'reason'">
             {{ record.reason || '-' }}
