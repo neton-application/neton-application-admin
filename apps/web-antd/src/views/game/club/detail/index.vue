@@ -324,6 +324,7 @@ const tplForm = reactive<GameClubApi.RoomTemplateInput>({
   min_active_rooms: 2,
   max_active_rooms: 8,
   expand_when_occupancy_percent: 80,
+  session_duration_minutes: 0,
   target_seated_count: 3,
   max_auto_players_per_room: 3,
   auto_play_difficulty: 40,
@@ -349,6 +350,7 @@ function openTplCreate(gameType = 'texas_holdem') {
     min_active_rooms: 2,
     max_active_rooms: 8,
     expand_when_occupancy_percent: 80,
+    session_duration_minutes: 0,
     target_seated_count: 3,
     max_auto_players_per_room: 3,
     auto_play_difficulty: 40,
@@ -376,6 +378,7 @@ function openTplEdit(t: GameClubApi.RoomTemplate) {
     min_active_rooms: t.min_active_rooms,
     max_active_rooms: t.max_active_rooms,
     expand_when_occupancy_percent: t.expand_when_occupancy_percent,
+    session_duration_minutes: t.session_duration_minutes,
     target_seated_count: t.target_seated_count,
     max_auto_players_per_room: t.max_auto_players_per_room,
     auto_play_difficulty: t.auto_play_difficulty,
@@ -1399,6 +1402,14 @@ onMounted(loadDetail);
               v-model:value="tplForm.expand_when_occupancy_percent"
               :min="1"
               :max="100"
+              class="w-full"
+            />
+          </FormItem>
+          <FormItem label="牌局时长 (分钟, 0=无限; 到时回收关房)">
+            <InputNumber
+              v-model:value="tplForm.session_duration_minutes"
+              :min="0"
+              :max="1440"
               class="w-full"
             />
           </FormItem>

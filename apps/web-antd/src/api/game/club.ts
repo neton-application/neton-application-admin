@@ -115,6 +115,7 @@ export namespace GameClubApi {
     min_active_rooms: number;
     max_active_rooms: number;
     expand_when_occupancy_percent: number;
+    session_duration_minutes: number;
     target_seated_count: number;
     max_auto_players_per_room: number;
     auto_play_difficulty: number;
