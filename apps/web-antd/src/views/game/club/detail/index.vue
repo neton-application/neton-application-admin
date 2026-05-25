@@ -5,6 +5,7 @@ import type { GameTableApi } from '#/api/game/table';
 import type { GameLedgerApi } from '#/api/game/ledger';
 import type { GameAuditApi } from '#/api/game/audit';
 import type { GameWalletApi } from '#/api/game/wallet';
+import type { GameWalletLedgerApi } from '#/api/game/wallet-ledger';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -50,6 +51,7 @@ import {
 } from '#/api/game/club';
 import { getTablePage } from '#/api/game/table';
 import { getLedgerPage } from '#/api/game/ledger';
+import { getWalletLedgerPage, sourceTypeLabel } from '#/api/game/wallet-ledger';
 import { getAuditPage } from '#/api/game/audit';
 import {
   deductMemberWallet,
@@ -123,6 +125,14 @@ const adjustOpen = ref(false);
 const adjustMode = ref<'deduct' | 'topup'>('topup');
 const adjustTargetUserId = ref(0);
 const adjustForm = reactive({ amount: 0, reason: '', remark: '' });
+
+// 成员资金流水（上分/下分/赢/输 完整日志）：复用 wallet-ledger（club_member 钱包 kind=5）。
+// 注意与上方 club 级 ledger（ledgerRows/loadLedger）区分，统一加 memberLedger 前缀。
+const memberLedgerOpen = ref(false);
+const memberLedgerUserId = ref(0);
+const memberLedgerLoading = ref(false);
+const memberLedgerRows = ref<GameWalletLedgerApi.LedgerRow[]>([]);
+const memberLedgerPage = reactive({ current: 1, pageSize: 20, total: 0 });
 
 async function loadDetail() {
   if (!clubId.value) return;
@@ -477,6 +487,38 @@ function openDeductModal(userId: number) {
   adjustOpen.value = true;
 }
 
+// 成员流水：上分/下分(TOPUP/DEDUCT/WITHDRAW/ADJUSTMENT) + 赢/输(HAND_SETTLE/CASH_OUT/BUY_IN_FREEZE/REFUND)
+// 全在 club_member 钱包流水里，direction 1=入账(+) -1=出账(-)。
+async function loadMemberLedger(page = 1) {
+  if (!clubId.value || !memberLedgerUserId.value) return;
+  memberLedgerLoading.value = true;
+  try {
+    const { list, total } = await getWalletLedgerPage({
+      page,
+      page_size: memberLedgerPage.pageSize,
+      wallet_kind: 5, // club_member
+      club_id: clubId.value,
+      user_id: memberLedgerUserId.value,
+    });
+    memberLedgerRows.value = list;
+    memberLedgerPage.current = page;
+    memberLedgerPage.total = total;
+  } catch {
+    message.error('加载流水失败');
+  } finally {
+    memberLedgerLoading.value = false;
+  }
+}
+
+function openMemberLedgerModal(userId: number) {
+  memberLedgerUserId.value = userId;
+  memberLedgerRows.value = [];
+  memberLedgerPage.current = 1;
+  memberLedgerPage.total = 0;
+  memberLedgerOpen.value = true;
+  loadMemberLedger(1);
+}
+
 async function submitAdjust() {
   if (!adjustForm.amount || adjustForm.amount <= 0) {
     message.error('amount 必须 > 0');
@@ -770,6 +812,13 @@ onMounted(loadDetail);
                   @click="openDeductModal(record.user_id)"
                 >
                   下分
+                </Button>
+                <Button
+                  size="small"
+                  type="link"
+                  @click="openMemberLedgerModal(record.user_id)"
+                >
+                  流水
                 </Button>
               </template>
             </template>
@@ -1200,6 +1249,68 @@ onMounted(loadDetail);
           />
         </FormItem>
       </Form>
+    </Modal>
+
+    <!-- 成员资金流水（上分/下分/赢/输 完整日志） -->
+    <Modal
+      v-model:open="memberLedgerOpen"
+      :title="`玩家 #${memberLedgerUserId} 资金流水`"
+      width="860"
+      :footer="null"
+      :destroy-on-close="true"
+    >
+      <Alert
+        type="info"
+        message="该玩家在本俱乐部的完整资金流水：上分/下分(人工调账)、入桌冻结、牌局结算(赢/输)、离桌兑出、退款。入账为 +(绿)、出账为 -(红)。"
+        show-icon
+        class="mb-3"
+      />
+      <Table
+        :data-source="memberLedgerRows"
+        :loading="memberLedgerLoading"
+        row-key="entry_id"
+        size="small"
+        :pagination="{
+          current: memberLedgerPage.current,
+          pageSize: memberLedgerPage.pageSize,
+          total: memberLedgerPage.total,
+          showSizeChanger: false,
+          onChange: (p: number) => loadMemberLedger(p),
+        }"
+        :columns="[
+          {
+            title: '时间',
+            dataIndex: 'created_at',
+            width: 170,
+            customRender: ({ value }) => (value ? formatDateTime(value) : '-'),
+          },
+          { title: '类型', dataIndex: 'source_type', width: 110 },
+          { title: '变动', dataIndex: 'amount', width: 130, align: 'right' },
+          {
+            title: '变动后余额',
+            dataIndex: 'balance_after',
+            width: 120,
+            align: 'right',
+            customRender: ({ value }) => Number(value ?? 0).toLocaleString(),
+          },
+          { title: '原因', dataIndex: 'reason' },
+        ]"
+      >
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.dataIndex === 'source_type'">
+            <Tag>{{ sourceTypeLabel(record.source_type) }}</Tag>
+          </template>
+          <template v-else-if="column.dataIndex === 'amount'">
+            <span :style="{ color: record.direction >= 0 ? '#3f8600' : '#cf1322' }">
+              {{ record.direction >= 0 ? '+' : '-'
+              }}{{ Number(record.amount ?? 0).toLocaleString() }}
+            </span>
+          </template>
+          <template v-else-if="column.dataIndex === 'reason'">
+            {{ record.reason || '-' }}
+          </template>
+        </template>
+      </Table>
     </Modal>
 
     <!-- Bind agent modal -->
