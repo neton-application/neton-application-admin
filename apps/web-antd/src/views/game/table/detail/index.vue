@@ -2,19 +2,25 @@
 import type { GameHandApi } from '#/api/game/hand';
 import type { GameTableApi } from '#/api/game/table';
 
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { Page } from '@vben/common-ui';
 import { formatDateTime } from '@vben/utils';
 
 import {
+  Alert,
   Button,
   Card,
   Descriptions,
   DescriptionsItem,
   Drawer,
   Empty,
+  Form,
+  FormItem,
+  Input,
+  InputNumber,
+  message,
   Modal,
   Space,
   Statistic,
@@ -26,6 +32,7 @@ import {
 } from 'ant-design-vue';
 
 import { getHandDetail, getHandList } from '#/api/game/hand';
+import { setRoomDebugOverrides } from '#/api/game/room';
 import {
   forceCloseTable,
   getTableAudit,
@@ -196,6 +203,93 @@ const handProfitChain = computed(() => {
   }));
 });
 
+// GAME_CRAZY_DEALER_MODE Phase 1 (Admin-B) ----------------------------------
+// 房间详情顶部展示 dealer_mode / dealer_strategy / has_pending_debug_overrides.
+// 数据源 = /admin/game/tables/get/{id} 顶层字段 (Admin-A 已暴露).
+const dealerMode = computed<'CRAZY' | 'FAIR'>(
+  () => (detail.value?.dealer_mode as 'CRAZY' | 'FAIR' | undefined) ?? 'FAIR',
+);
+const dealerStrategy = computed<null | string>(
+  () => detail.value?.dealer_strategy ?? null,
+);
+const hasPendingOverrides = computed<boolean>(
+  () => detail.value?.has_pending_debug_overrides === true,
+);
+
+// 调试发牌指令面板状态. v-if="dealerMode === 'CRAZY'" 才挂载.
+// 字段对应 PUT /admin/game/rooms/{id}/debug-overrides:
+//   - seat_no       => hole_cards 的 key
+//   - hole_card_1/2 => hole_cards 的 value (2 张)
+//   - flop_1/2/3    => flop (3 张)
+//   - turn / river  => 单张
+// 卡牌字符串约定: `card_<suit><rank>` —— suit ∈ s/h/d/c, rank ∈ A/K/Q/J/10/9..2.
+const debugOpen = ref(false);
+const debugSubmitting = ref(false);
+const debugForm = reactive({
+  seat_no: 0,
+  hole_card_1: '',
+  hole_card_2: '',
+  flop_1: '',
+  flop_2: '',
+  flop_3: '',
+  turn: '',
+  river: '',
+});
+
+function resetDebugForm() {
+  debugForm.seat_no = 0;
+  debugForm.hole_card_1 = '';
+  debugForm.hole_card_2 = '';
+  debugForm.flop_1 = '';
+  debugForm.flop_2 = '';
+  debugForm.flop_3 = '';
+  debugForm.turn = '';
+  debugForm.river = '';
+}
+
+// 至少填一段 (hole / flop / turn / river); 否则禁用保存避免空 PUT.
+// hole 段视为有效仅当 seat_no > 0 且 2 张牌都填.
+const debugHasAny = computed(() => {
+  const f = debugForm;
+  const hole = f.seat_no > 0 && f.hole_card_1.trim() !== '' && f.hole_card_2.trim() !== '';
+  const flop =
+    f.flop_1.trim() !== '' && f.flop_2.trim() !== '' && f.flop_3.trim() !== '';
+  const turn = f.turn.trim() !== '';
+  const river = f.river.trim() !== '';
+  return hole || flop || turn || river;
+});
+
+async function submitDebugOverrides() {
+  if (!detail.value) return;
+  if (!debugHasAny.value) return; // 按钮 disabled 应已挡住, 再兜一层
+  const f = debugForm;
+  const body: Parameters<typeof setRoomDebugOverrides>[1] = {};
+  if (f.seat_no > 0 && f.hole_card_1.trim() && f.hole_card_2.trim()) {
+    body.hole_cards = {
+      [String(f.seat_no)]: [f.hole_card_1.trim(), f.hole_card_2.trim()],
+    };
+  }
+  if (f.flop_1.trim() && f.flop_2.trim() && f.flop_3.trim()) {
+    body.flop = [f.flop_1.trim(), f.flop_2.trim(), f.flop_3.trim()];
+  }
+  if (f.turn.trim()) body.turn = f.turn.trim();
+  if (f.river.trim()) body.river = f.river.trim();
+
+  debugSubmitting.value = true;
+  try {
+    // server 已 ship: 写入后自动把 dealer_strategy 切到 'debug'.
+    await setRoomDebugOverrides(detail.value.table_id, body);
+    message.success('调试发牌指令已设置（下一手生效）');
+    debugOpen.value = false;
+    // 拉新详情让 dealer_strategy / has_pending_debug_overrides 反映最新状态.
+    await load();
+  } catch (e: any) {
+    message.error(`保存失败: ${e?.message ?? e}`);
+  } finally {
+    debugSubmitting.value = false;
+  }
+}
+
 const snapshotPretty = computed(() => {
   if (!detail.value?.round?.snapshot) return null;
   try {
@@ -321,12 +415,58 @@ onMounted(load);
             <DescriptionsItem label="Closed">
               {{ detail.closed_at ? formatDateTime(detail.closed_at) : '-' }}
             </DescriptionsItem>
+            <!--
+              GAME_CRAZY_DEALER_MODE Phase 1 (Admin-B): dealer 状态 3 字段.
+              来源 = /admin/game/tables/get/{id} 顶层 (Admin-A 已暴露解析过的字段).
+              FAIR 时 dealer_strategy 显示 "—" (按规范不暴露 strategy 概念给 FAIR 房间).
+            -->
+            <DescriptionsItem label="发牌模式">
+              <Tag v-if="dealerMode === 'CRAZY'" color="orange">
+                🔥 CRAZY · 高波动娱乐
+              </Tag>
+              <Tag v-else>FAIR · 公平随机</Tag>
+            </DescriptionsItem>
+            <DescriptionsItem label="当前策略">
+              <template v-if="dealerMode === 'CRAZY'">
+                <Tag v-if="dealerStrategy === 'debug'" color="purple">debug</Tag>
+                <Tag v-else-if="dealerStrategy === 'noop'">noop</Tag>
+                <Tag v-else>{{ dealerStrategy ?? 'noop' }}</Tag>
+              </template>
+              <span v-else class="text-gray-400">—</span>
+            </DescriptionsItem>
+            <DescriptionsItem label="待消费 Debug Override" :span="2">
+              <Tag v-if="hasPendingOverrides" color="purple">有 · 下一手生效</Tag>
+              <Tag v-else>无</Tag>
+            </DescriptionsItem>
             <DescriptionsItem label="Config JSON" :span="2">
               <Typography.Text code copyable>
                 {{ detail.config_json ?? '(none)' }}
               </Typography.Text>
             </DescriptionsItem>
           </Descriptions>
+        </Card>
+
+        <!--
+          调试发牌指令面板 (仅 CRAZY 模式可见).
+          点击按钮打开 modal 表单; 保存 PUT /admin/game/rooms/{id}/debug-overrides.
+          server 写入成功后自动把 dealer_strategy 切到 'debug'; 下一手 start_round
+          tx 内一次性消费并剥除, 之后 strategy 回 noop.
+        -->
+        <Card v-if="dealerMode === 'CRAZY'" class="mt-4" title="疯狂模式调试发牌">
+          <Alert
+            type="info"
+            show-icon
+            :message="hasPendingOverrides
+              ? '当前还有未消费的调试指令 (下一手生效); 重新保存会覆盖.'
+              : '设置后仅影响下一手, start_round 成功后自动消费.'"
+            description="客户端会明示疯狂模式，所有干预会写入 result_json 与 audit。"
+            class="mb-3"
+          />
+          <Space>
+            <Button type="primary" @click="debugOpen = true">
+              设置下一手调试发牌指令
+            </Button>
+          </Space>
         </Card>
 
         <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -638,5 +778,102 @@ onMounted(load);
         </Card>
       </div>
     </Drawer>
+
+    <!--
+      调试发牌指令 modal (GAME_CRAZY_DEALER_MODE Phase 1 §11).
+      只在 dealer_mode === 'CRAZY' 的房间生效 (server 端会强校验; admin 这边仅展示按钮).
+      保存 → PUT /admin/game/rooms/{id}/debug-overrides;
+      server 自动把 dealer_strategy 切到 'debug', 下一手 start_round 一次性消费.
+    -->
+    <Modal
+      v-model:open="debugOpen"
+      title="疯狂模式调试发牌"
+      width="640"
+      :destroy-on-close="true"
+      :ok-button-props="{ disabled: !debugHasAny || debugSubmitting }"
+      :confirm-loading="debugSubmitting"
+      :mask-closable="!debugSubmitting"
+      ok-text="保存（下一手生效）"
+      @ok="submitDebugOverrides"
+    >
+      <Alert
+        type="info"
+        show-icon
+        message="仅影响下一手，start_round 成功后自动消费。"
+        description="客户端会明示疯狂模式，所有干预会写入 result_json 与 audit。卡牌格式 card_<suit><rank>，如 card_sA = 黑桃A、card_d10 = 方块10、card_c2 = 梅花2。suit 取 s/h/d/c (黑桃/红桃/方块/梅花)。"
+        class="mb-3"
+      />
+      <Form layout="vertical">
+        <Card size="small" title="起手两张牌 (Hole cards, 可选)" class="mb-3">
+          <div class="grid grid-cols-3 gap-x-4">
+            <FormItem label="座位号 seat_no">
+              <InputNumber
+                v-model:value="debugForm.seat_no"
+                :min="0"
+                :max="9"
+                class="w-full"
+                placeholder="0=不填"
+              />
+            </FormItem>
+            <FormItem label="第 1 张">
+              <Input v-model:value="debugForm.hole_card_1" placeholder="card_sA" />
+            </FormItem>
+            <FormItem label="第 2 张">
+              <Input v-model:value="debugForm.hole_card_2" placeholder="card_hA" />
+            </FormItem>
+          </div>
+          <div class="text-xs text-gray-500">
+            三个都填才生效；只填一两个会被忽略。
+          </div>
+        </Card>
+
+        <Card size="small" title="Flop 三张 (可选)" class="mb-3">
+          <div class="grid grid-cols-3 gap-x-4">
+            <FormItem label="Flop 1">
+              <Input v-model:value="debugForm.flop_1" placeholder="card_sK" />
+            </FormItem>
+            <FormItem label="Flop 2">
+              <Input v-model:value="debugForm.flop_2" placeholder="card_dK" />
+            </FormItem>
+            <FormItem label="Flop 3">
+              <Input v-model:value="debugForm.flop_3" placeholder="card_cK" />
+            </FormItem>
+          </div>
+          <div class="text-xs text-gray-500">
+            三张都填才生效；只填一两个会被忽略。
+          </div>
+        </Card>
+
+        <Card size="small" title="Turn / River (可选, 各一张)">
+          <div class="grid grid-cols-2 gap-x-4">
+            <FormItem label="Turn">
+              <Input v-model:value="debugForm.turn" placeholder="card_h3" />
+            </FormItem>
+            <FormItem label="River">
+              <Input v-model:value="debugForm.river" placeholder="card_c2" />
+            </FormItem>
+          </div>
+        </Card>
+      </Form>
+      <div class="mt-3 text-xs text-gray-500">
+        至少填一组 (起手 / Flop / Turn / River 任一); 否则"保存"按钮禁用。重填会覆盖上一份未消费的 override。
+      </div>
+      <template #footer>
+        <Button :disabled="debugSubmitting" @click="resetDebugForm">
+          清空
+        </Button>
+        <Button :disabled="debugSubmitting" @click="debugOpen = false">
+          取消
+        </Button>
+        <Button
+          type="primary"
+          :disabled="!debugHasAny"
+          :loading="debugSubmitting"
+          @click="submitDebugOverrides"
+        >
+          保存（下一手生效）
+        </Button>
+      </template>
+    </Modal>
   </Page>
 </template>

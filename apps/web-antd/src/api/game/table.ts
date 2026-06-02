@@ -107,6 +107,13 @@ export namespace GameTableApi {
     created_at?: null | number;
     updated_at?: null | number;
     closed_at?: null | number;
+    // GAME_CRAZY_DEALER_MODE Phase 1 §12 (Admin-A): 顶层暴露 dealer 状态
+    //   dealer_mode:                 'FAIR' / 'CRAZY' (FAIR 时不展示 strategy)
+    //   dealer_strategy:             CRAZY 模式下策略名 (noop / debug); FAIR 时 null
+    //   has_pending_debug_overrides: 当前 config_json 是否还挂着未消费的 debug_overrides
+    dealer_mode?: 'CRAZY' | 'FAIR';
+    dealer_strategy?: null | string;
+    has_pending_debug_overrides?: boolean;
     round?: null | TableRoundInfo;
     ledger_summary: LedgerSummary;
     audit_summary: AuditSummary;

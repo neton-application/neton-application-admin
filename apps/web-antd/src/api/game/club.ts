@@ -139,6 +139,11 @@ export namespace GameClubApi {
     deck_mode: string;
     currency_type: string;
     insurance_enabled: boolean;
+    // GAME_CRAZY_DEALER_MODE Phase 1 (Admin-B): 发牌模式
+    //   'FAIR'  = 公平随机 (默认)
+    //   'CRAZY' = 高波动娱乐模式 (客户端会明示, 所有干预写 result_json/audit)
+    // server DTO 已支持; 老模板 GET 时缺省 FAIR.
+    dealer_mode: 'CRAZY' | 'FAIR';
     sort_order: number;
     created_at: number;
     updated_at: number;

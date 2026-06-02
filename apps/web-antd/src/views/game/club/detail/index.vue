@@ -343,6 +343,9 @@ const tplForm = reactive<GameClubApi.RoomTemplateInput>({
   deck_mode: 'fair_random',
   currency_type: 'club_credit',
   insurance_enabled: false,
+  // GAME_CRAZY_DEALER_MODE Phase 1 (Admin-B): 与 play_mode 完全分离的发牌模式.
+  // 默认 FAIR (公平随机); CRAZY = 高波动娱乐模式.
+  dealer_mode: 'FAIR',
   sort_order: 0,
 });
 
@@ -369,6 +372,7 @@ function openTplCreate(gameType = 'texas_holdem') {
     deck_mode: 'fair_random',
     currency_type: 'club_credit',
     insurance_enabled: false,
+    dealer_mode: 'FAIR',
     sort_order: 0,
   });
   tplModalOpen.value = true;
@@ -397,6 +401,8 @@ function openTplEdit(t: GameClubApi.RoomTemplate) {
     deck_mode: t.deck_mode,
     currency_type: t.currency_type,
     insurance_enabled: t.insurance_enabled,
+    // 老模板 GET 时 dealer_mode 可能缺省, server 已 @EncodeDefault FAIR; 兜底再加一层.
+    dealer_mode: t.dealer_mode ?? 'FAIR',
     sort_order: t.sort_order,
   });
   tplModalOpen.value = true;
@@ -1551,6 +1557,26 @@ onMounted(loadDetail);
                 { value: 'crazy', label: '疯狂' },
               ]"
             />
+          </FormItem>
+          <!--
+            GAME_CRAZY_DEALER_MODE Phase 1 (Admin-B): 与 play_mode 解耦的"发牌模式".
+            play_mode = 玩法规则; dealer_mode = 发牌模式. 选 CRAZY 后房间会用 CrazyPokerDealer,
+            默认走 noop strategy (与公平随机等价); 走 debug strategy 要在房间详情页"调试发牌指令"面板设置.
+          -->
+          <FormItem label="发牌模式">
+            <Select
+              v-model:value="tplForm.dealer_mode"
+              :options="[
+                { value: 'FAIR', label: 'FAIR · 公平随机' },
+                { value: 'CRAZY', label: 'CRAZY · 高波动娱乐模式' },
+              ]"
+            />
+            <div
+              v-if="tplForm.dealer_mode === 'CRAZY'"
+              class="mt-1 text-xs text-gray-500"
+            >
+              客户端会明示疯狂模式，所有干预会写入 result_json 与 audit。
+            </div>
           </FormItem>
           <FormItem label="启用">
             <Switch v-model:checked="tplForm.enabled" />
