@@ -144,6 +144,11 @@ export namespace GameClubApi {
     //   'CRAZY' = 高波动娱乐模式 (客户端会明示, 所有干预写 result_json/audit)
     // server DTO 已支持; 老模板 GET 时缺省 FAIR.
     dealer_mode: 'CRAZY' | 'FAIR';
+    // SINGLE-BUYIN Phase 1 (SINGLE-BUYIN-A/B): 单次带入保护
+    //   开启后, 同一玩家在本房间生命周期内只允许成功带入一次; 输光或离座后仍可观战,
+    //   但不能再次入座. server 端 sit_down 路径 guard, 错误码 GAME_SINGLE_BUYIN_PROTECTION.
+    //   老模板 GET 时缺省 false.
+    single_buyin_protection_enabled: boolean;
     sort_order: number;
     created_at: number;
     updated_at: number;

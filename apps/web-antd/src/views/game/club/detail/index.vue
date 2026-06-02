@@ -346,6 +346,8 @@ const tplForm = reactive<GameClubApi.RoomTemplateInput>({
   // GAME_CRAZY_DEALER_MODE Phase 1 (Admin-B): 与 play_mode 完全分离的发牌模式.
   // 默认 FAIR (公平随机); CRAZY = 高波动娱乐模式.
   dealer_mode: 'FAIR',
+  // SINGLE-BUYIN Phase 1 (SINGLE-BUYIN-B): 单次带入保护开关, 默认关闭.
+  single_buyin_protection_enabled: false,
   sort_order: 0,
 });
 
@@ -373,6 +375,7 @@ function openTplCreate(gameType = 'texas_holdem') {
     currency_type: 'club_credit',
     insurance_enabled: false,
     dealer_mode: 'FAIR',
+    single_buyin_protection_enabled: false,
     sort_order: 0,
   });
   tplModalOpen.value = true;
@@ -403,6 +406,8 @@ function openTplEdit(t: GameClubApi.RoomTemplate) {
     insurance_enabled: t.insurance_enabled,
     // 老模板 GET 时 dealer_mode 可能缺省, server 已 @EncodeDefault FAIR; 兜底再加一层.
     dealer_mode: t.dealer_mode ?? 'FAIR',
+    // SINGLE-BUYIN-B: 老模板 GET 时 single_buyin_protection_enabled 可能缺省, 兜底 false.
+    single_buyin_protection_enabled: t.single_buyin_protection_enabled ?? false,
     sort_order: t.sort_order,
   });
   tplModalOpen.value = true;
@@ -1583,6 +1588,16 @@ onMounted(loadDetail);
           </FormItem>
           <FormItem label="保险玩法">
             <Switch v-model:checked="tplForm.insurance_enabled" />
+          </FormItem>
+          <!--
+            SINGLE-BUYIN Phase 1 (SINGLE-BUYIN-B): 单次带入保护.
+            server 端 sit_down guard, 错误码 GAME_SINGLE_BUYIN_PROTECTION.
+          -->
+          <FormItem label="单次带入保护">
+            <Switch v-model:checked="tplForm.single_buyin_protection_enabled" />
+            <div class="mt-1 text-xs text-gray-500">
+              开启后，同一玩家在本房间生命周期内只允许成功带入一次。输光或离座后仍可观战，但不能再次入座。
+            </div>
           </FormItem>
         </div>
       </Form>
