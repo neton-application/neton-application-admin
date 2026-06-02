@@ -81,6 +81,21 @@ export namespace GameClubApi {
     today_end: number;
   }
 
+  // 短期 admin 协助经营者编辑俱乐部基础信息 (name / description).
+  // 缺字段 = 不改; description 传 "" 等于清空 (后端约定).
+  export interface UpdateBasicRequest {
+    name?: string;
+    description?: null | string;
+  }
+
+  // Admin 帮指定 owner 直接建俱乐部 — 跳过 quota / 审核,直接 APPROVED.
+  // app 端禁止自助创建后,这是唯一创建入口.
+  export interface CreateRequest {
+    owner_user_id: number;
+    name: string;
+    description?: null | string;
+  }
+
   export interface ListParams {
     page: number;
     page_size: number;
@@ -139,6 +154,65 @@ export namespace GameClubApi {
     club_id: number;
     templates: RoomTemplate[];
   }
+
+  // 房型保险配置 (INS-MGMT-B3 / V024; spec INSURANCE_MANAGEMENT_SPEC §2.1).
+  //   GET 永远返完整 8 字段 (DB NULL → 服务端补默认), 前端 dialog 直接绑定.
+  //   PUT 只动 insurance_enabled + insurance_config_json, 不影响房型其他字段;
+  //         数值字段传 null = 走 DB NULL = 走默认 (恢复默认按钮即此).
+  export interface RoomTemplateInsuranceConfig {
+    enabled: boolean;
+    window_seconds: number;
+    min_pot_bb: number;
+    max_outs: number;
+    max_players: number;
+    turn_cap_pot_ratio: number;
+    river_cap_pot_ratio: number;
+    payout_cap_pot_ratio: number;
+  }
+
+  export interface RoomTemplateInsuranceConfigResponse {
+    club_id: number;
+    template_id: number;
+    config: RoomTemplateInsuranceConfig;
+  }
+
+  // PUT body: enabled 必传; 其他字段 null = 不入 JSON = 走默认.
+  export interface RoomTemplateInsuranceConfigRequest {
+    enabled: boolean;
+    window_seconds?: null | number;
+    min_pot_bb?: null | number;
+    max_outs?: null | number;
+    max_players?: null | number;
+    turn_cap_pot_ratio?: null | number;
+    river_cap_pot_ratio?: null | number;
+    payout_cap_pot_ratio?: null | number;
+  }
+
+  // 俱乐部牌局 (game_match) 行. status: 0=PLAYING 1=SETTLED 2=ABORTED.
+  // room_id 只在 status=PLAYING 时回传; pot 只在 SETTLED 时回传.
+  export const MATCH_STATUS_PLAYING = 0;
+  export const MATCH_STATUS_SETTLED = 1;
+  export const MATCH_STATUS_ABORTED = 2;
+
+  export interface MatchListItem {
+    match_id: number;
+    game_kind: string;
+    status: number;
+    room_id?: null | number;
+    match_no_in_room: number;
+    player_count?: number;
+    pot?: null | number;
+    started_at: number;
+    ended_at?: null | number;
+  }
+
+  export interface MatchListResponse {
+    list: MatchListItem[];
+    total: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+  }
 }
 
 const BASE = '/game/clubs';
@@ -157,6 +231,20 @@ export function getClubDetail(clubId: number) {
   return requestClient.get<GameClubApi.ClubDetail>(`${BASE}/get/${clubId}`);
 }
 
+// 短期 admin 协助经营者: 编辑俱乐部基础信息 (manage 路由组未启用前的代理路径).
+export function updateClubBasic(
+  clubId: number,
+  data: GameClubApi.UpdateBasicRequest,
+) {
+  return requestClient.put<GameClubApi.ClubDetail>(`${BASE}/${clubId}`, data);
+}
+
+// Admin 帮指定 owner 创建俱乐部 — 后端 POST /admin/game/clubs/create.
+// 直接 APPROVED,跳过 PENDING_REVIEW 和 owner quota.
+export function createClubByAdmin(data: GameClubApi.CreateRequest) {
+  return requestClient.post<GameClubApi.ClubDetail>(`${BASE}/create`, data);
+}
+
 export function getClubMembers(clubId: number) {
   return requestClient.get<GameClubApi.ClubMember[]>(`${BASE}/${clubId}/members`);
 }
@@ -165,6 +253,19 @@ export function getClubRevenueSummary(clubId: number) {
   return requestClient.get<GameClubApi.RevenueSummary>(
     `${BASE}/${clubId}/revenue-summary`,
   );
+}
+
+// 俱乐部对局列表 (game_match per-club; 俱乐部详情 → 对局 tab).
+// status 可选过滤 (0=PLAYING / 1=SETTLED / 2=ABORTED).
+export async function getClubMatchPage(
+  clubId: number,
+  params: { page: number; page_size: number; status?: number },
+): Promise<{ list: GameClubApi.MatchListItem[]; total: number }> {
+  const data = await requestClient.get<GameClubApi.MatchListResponse>(
+    `${BASE}/${clubId}/matches`,
+    { params },
+  );
+  return { list: data.list ?? [], total: data.total ?? 0 };
 }
 
 // ---------- 俱乐部设置 + 牌桌组 RoomTemplate ----------
@@ -216,5 +317,29 @@ export function updateRoomTemplate(
 export function deleteRoomTemplate(clubId: number, templateId: number) {
   return requestClient.delete<void>(
     `${BASE}/${clubId}/room-templates/${templateId}`,
+  );
+}
+
+// ---------- 房型保险配置 (INS-MGMT-B3 / V024) ----------
+// GET 永远返完整 8 字段 (DB NULL → 服务端补 spec §2.1 默认).
+export function getRoomTemplateInsuranceConfig(
+  clubId: number,
+  templateId: number,
+) {
+  return requestClient.get<GameClubApi.RoomTemplateInsuranceConfigResponse>(
+    `${BASE}/${clubId}/room-templates/${templateId}/insurance`,
+  );
+}
+
+// PUT 只动 insurance_enabled + insurance_config_json. 数值字段传 null = 走 DB NULL = 走默认.
+// "恢复默认" 按钮 → PUT { enabled: true } (其他字段全 null) → DB insurance_config_json=NULL.
+export function updateRoomTemplateInsuranceConfig(
+  clubId: number,
+  templateId: number,
+  data: GameClubApi.RoomTemplateInsuranceConfigRequest,
+) {
+  return requestClient.put<GameClubApi.RoomTemplateInsuranceConfigResponse>(
+    `${BASE}/${clubId}/room-templates/${templateId}/insurance`,
+    data,
   );
 }
