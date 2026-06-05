@@ -543,7 +543,12 @@ async function submitAdjust() {
   try {
     await fn(clubId.value, adjustTargetUserId.value, {
       amount: adjustForm.amount,
-      request_id: crypto.randomUUID(),
+      // crypto.randomUUID 仅 secure context (HTTPS / localhost) 可用;prod 走 HTTP
+      // 时会 undefined。fallback 时间戳 + random base36 保证幂等 key 唯一即可。
+      request_id:
+        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : `req-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
       reason: adjustForm.reason.trim(),
       remark: adjustForm.remark.trim() || null,
     });
