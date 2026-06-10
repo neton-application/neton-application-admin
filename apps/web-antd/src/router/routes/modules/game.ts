@@ -31,6 +31,17 @@ import type { RouteRecordRaw } from 'vue-router';
  */
 const routes: RouteRecordRaw[] = [
   {
+    path: '/game/match/detail',
+    component: () => import('#/views/game/match/detail/index.vue'),
+    name: 'GameMatchDetail',
+    meta: {
+      title: '对局详情',
+      icon: 'lucide:list-ordered',
+      activePath: '/game/match',
+      hideInMenu: true,
+    },
+  },
+  {
     path: '/game/club/detail',
     component: () => import('#/views/game/club/detail/index.vue'),
     name: 'GameClubDetail',
