@@ -15,28 +15,21 @@ import type { RouteRecordRaw } from 'vue-router';
  *   见 GAME_V1_RELEASE_PROVING.md §7.2.
  *
  * 后端 endpoint 对接 (参考):
- *   GET  /admin/game/tables/page                    桌列表  (game:table:read)
- *   GET  /admin/game/tables/get/{id}                桌详情  (game:table:read)
- *   POST /admin/game/tables/{id}/force-close        强关桌  (game:table:force_close)
- *   GET  /admin/game/tables/{id}/hands              单桌局列表 (game:hand:read)
- *   GET  /admin/game/tables/{id}/hands/{round_id}   单局详情   (game:hand:read)
- *   GET  /admin/game/audit/page                     跨桌 audit (game:audit:read)
- *   GET  /admin/game/ledger/page                    跨桌 ledger (game:ledger:read)
- *   GET  /admin/game/kinds/page                     game_kind 列表 (game:kind:read)
+ *   GET  /admin/game/tables/page                       桌列表  (game:table:read)
+ *   POST /admin/game/tables/{id}/force-close           强关桌  (game:table:force_close)
+ *   GET  /admin/game/matches/page                      对局列表 (game:hand:read)
+ *   GET  /admin/game/matches/{matchId}                 对局详情 (game:hand:read)
+ *   GET  /admin/game/matches/{matchId}/actions         对局动作 (game:hand:read)
+ *   GET  /admin/game/matches/{matchId}/ledger          对局资金 (game:ledger:read)
+ *   GET  /admin/game/matches/{matchId}/audit           对局审计 (game:audit:read)
+ *   GET  /admin/game/ledger/page                       跨桌 ledger (game:ledger:read)
+ *   GET  /admin/game/kinds/page                        game_kind 列表 (game:kind:read)
  *   POST /admin/game/kinds/{kind}/{update,enable,disable}  (game:kind:update)
+ *
+ * ROOM-MATCH-1: Room 没有详情页, GameTableDetail 已删除. 看牌桌实时状态 / 资金 /
+ *   审计走 Match Detail (ROOM-MATCH-2 加).
  */
 const routes: RouteRecordRaw[] = [
-  {
-    path: '/game/table/detail',
-    component: () => import('#/views/game/table/detail/index.vue'),
-    name: 'GameTableDetail',
-    meta: {
-      title: '牌桌详情',
-      icon: 'lucide:table-2',
-      activePath: '/game/table',
-      hideInMenu: true,
-    },
-  },
   {
     path: '/game/club/detail',
     component: () => import('#/views/game/club/detail/index.vue'),

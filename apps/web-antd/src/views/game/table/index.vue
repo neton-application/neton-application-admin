@@ -16,12 +16,8 @@ import { TABLE_STATE_OPTIONS, useGridColumns, useGridFormSchema } from './data';
 
 const router = useRouter();
 
-function handleViewDetail(row: GameTableApi.TableListItem) {
-  router.push({
-    name: 'GameTableDetail',
-    query: { tableId: row.table_id },
-  });
-}
+// ROOM-MATCH-1: Room has no detail page. The action button below is gone; users
+//   navigate to Match Detail (ROOM-MATCH-2) from the Match list instead.
 
 function handleForceClose(row: GameTableApi.TableListItem) {
   Modal.confirm({
@@ -114,13 +110,6 @@ void useVbenModal;
       <template #actions="{ row }">
         <TableAction
           :actions="[
-            {
-              label: $t('common.detail'),
-              type: 'link',
-              icon: ACTION_ICON.VIEW,
-              auth: ['game:table:read'],
-              onClick: handleViewDetail.bind(null, row),
-            },
             {
               label: '强关',
               type: 'link',

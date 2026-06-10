@@ -35,7 +35,10 @@ const coreRoutes: RouteRecordRaw[] = [
     },
     name: 'Root',
     path: '/',
-    redirect: preferences.app.defaultHomePath,
+    // 用函数形式，避免在 module load 时把当时的 preferences 值（可能是缓存里
+    // 的旧 /analytics）烧死进路由。每次导航都重新求值，并最终硬回退到
+    // /dashboard（参见 store/auth.ts 同一注释）。
+    redirect: () => preferences.app.defaultHomePath || '/dashboard',
     children: [],
   },
   {

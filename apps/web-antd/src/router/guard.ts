@@ -58,10 +58,13 @@ function setupAccessGuard(router: Router) {
     // 基本路由，这些路由不需要进入权限拦截
     if (coreRouteNames.includes(to.name as string)) {
       if (to.path === LOGIN_PATH && accessStore.accessToken) {
+        // 不依赖 preferences.app.defaultHomePath：vben preferences 的 merge
+        // 顺序问题会让旧缓存值（/analytics）反过来盖掉新默认（/dashboard）。
+        // 硬回退到 /dashboard；userInfo.homePath 由后端下发，优先级最高。
         return decodeURIComponent(
           (to.query?.redirect as string) ||
             userStore.userInfo?.homePath ||
-            preferences.app.defaultHomePath,
+            '/dashboard',
         );
       }
       return true;
@@ -79,8 +82,9 @@ function setupAccessGuard(router: Router) {
         return {
           path: LOGIN_PATH,
           // 如不需要，直接删除 query
+          // 同上：硬比对 /dashboard，绕过被污染的 preferences.app.defaultHomePath
           query:
-            to.fullPath === preferences.app.defaultHomePath
+            to.fullPath === '/dashboard'
               ? {}
               : { redirect: encodeURIComponent(to.fullPath) },
           // 携带当前跳转的页面，登录后重新跳转该页面
@@ -130,9 +134,10 @@ function setupAccessGuard(router: Router) {
     accessStore.setAccessRoutes(accessibleRoutes);
     accessStore.setIsAccessChecked(true);
     userStore.setUserRoles(userRoles);
+    // 同上：硬比对 /dashboard，绕过被污染的 preferences.app.defaultHomePath
     const redirectPath = (from.query.redirect ??
-      (to.path === preferences.app.defaultHomePath
-        ? userInfo?.homePath || preferences.app.defaultHomePath
+      (to.path === '/dashboard'
+        ? userInfo?.homePath || '/dashboard'
         : to.fullPath)) as string;
 
     return {

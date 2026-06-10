@@ -3,7 +3,6 @@ import type { GameAgentApi } from '#/api/game/agent';
 import type { GameClubApi } from '#/api/game/club';
 import type { GameTableApi } from '#/api/game/table';
 import type { GameLedgerApi } from '#/api/game/ledger';
-import type { GameAuditApi } from '#/api/game/audit';
 import type { GameWalletApi } from '#/api/game/wallet';
 import type { GameWalletLedgerApi } from '#/api/game/wallet-ledger';
 
@@ -42,17 +41,19 @@ import {
   createRoomTemplate,
   deleteRoomTemplate,
   getClubDetail,
+  getClubMatchPage,
   getClubMembers,
   getClubRevenueSummary,
   getClubSettings,
+  getRoomTemplateInsuranceConfig,
   getRoomTemplates,
   updateClubSettings,
   updateRoomTemplate,
+  updateRoomTemplateInsuranceConfig,
 } from '#/api/game/club';
 import { getTablePage } from '#/api/game/table';
 import { getLedgerPage } from '#/api/game/ledger';
 import { getWalletLedgerPage, sourceTypeLabel } from '#/api/game/wallet-ledger';
-import { getAuditPage } from '#/api/game/audit';
 import {
   deductMemberWallet,
   getClubMemberWallets,
@@ -67,6 +68,7 @@ import {
   listClubRooms,
   type GameAutoPlayerApi,
 } from '#/api/game/auto-player';
+import { fillBotNicknames } from '#/api/member/user';
 
 /**
  * 俱乐部详情页 (P-club-game-center) — 俱乐部老板视角入口.
@@ -75,12 +77,11 @@ import {
  *   - Overview: 基本信息 + member/table 统计 + 创建/更新时间
  *   - Members:  成员列表 (含 owner/admin/member 角色)
  *   - Tables:   本 club 桌列表 (复用 getTablePage + club_id filter)
- *   - Game Records: 本 club 游戏日志 (audit; 默认 club_id + scope_type='game_table' 走 JOIN)
  *   - Ledger:   本 club 资金流水 (复用 getLedgerPage + club_id filter)
  *   - Revenue:  抽水统计 (read-only summary; 真实分账见 GAME_REVENUE_SHARE_SPEC v1.1+)
  *
  * 跳转规则:
- *   - Tables 行 → 牌桌详情 (GameTableDetail) 同款入口
+ *   - 房间是容器, 不再有 "牌桌详情" 入口; 真正的详情对象是 Match (ROOM-MATCH-1)
  *   - 顶级菜单 (游戏日志 / 资金流水) 是跨 club 平台超管视角, 与此并列共存
  */
 
@@ -101,9 +102,12 @@ const tablesLoading = ref(false);
 const tables = ref<GameTableApi.TableListItem[]>([]);
 const tablesPage = ref({ current: 1, pageSize: 20, total: 0 });
 
-const auditLoading = ref(false);
-const auditRows = ref<GameAuditApi.Event[]>([]);
-const auditPage = ref({ current: 1, pageSize: 20, total: 0 });
+// 对局 (game_match) tab —— 真相源 = game_match; room_id 只在 status=PLAYING 时回传.
+const matchesLoading = ref(false);
+const matches = ref<GameClubApi.MatchListItem[]>([]);
+const matchesPage = ref({ current: 1, pageSize: 20, total: 0 });
+
+// ROOM-MATCH-1: audit state removed; audit now lives in Match Detail.
 
 const ledgerLoading = ref(false);
 const ledgerRows = ref<GameLedgerApi.Entry[]>([]);
@@ -174,21 +178,22 @@ async function loadTables(page = 1) {
   }
 }
 
-async function loadAudit(page = 1) {
+async function loadMatches(page = 1) {
   if (!clubId.value) return;
-  auditLoading.value = true;
+  matchesLoading.value = true;
   try {
-    const data = await getAuditPage({
+    const data = await getClubMatchPage(clubId.value, {
       page,
-      page_size: auditPage.value.pageSize,
-      club_id: clubId.value,
+      page_size: matchesPage.value.pageSize,
     });
-    auditRows.value = data.list;
-    auditPage.value = { ...auditPage.value, current: page, total: data.total };
+    matches.value = data.list;
+    matchesPage.value = { ...matchesPage.value, current: page, total: data.total };
   } finally {
-    auditLoading.value = false;
+    matchesLoading.value = false;
   }
 }
+
+// ROOM-MATCH-1: loadAudit removed; audit is loaded from Match Detail.
 
 async function loadLedger(page = 1) {
   if (!clubId.value) return;
@@ -477,6 +482,128 @@ function removeTpl(t: GameClubApi.RoomTemplate) {
   });
 }
 
+// ===== 房型保险设置 (INS-MGMT-B3 / V024) =====
+// 独立 dialog. 不塞进编辑房型主 form. 保存 = PUT 只动 insurance_enabled +
+// insurance_config_json, 不动其他字段. 已创建 room 不受影响 (snapshot frozen).
+const INSURANCE_DEFAULTS: GameClubApi.RoomTemplateInsuranceConfig = {
+  enabled: true,
+  window_seconds: 30,
+  min_pot_bb: 10,
+  max_outs: 14,
+  max_players: 3,
+  turn_cap_pot_ratio: 0.25,
+  river_cap_pot_ratio: 0.5,
+  payout_cap_pot_ratio: 1,
+};
+const tplInsuranceModalOpen = ref(false);
+const tplInsuranceEditingId = ref<null | number>(null);
+const tplInsuranceEditingName = ref('');
+const tplInsuranceLoading = ref(false);
+const tplInsuranceSaving = ref(false);
+const tplInsuranceForm = reactive<GameClubApi.RoomTemplateInsuranceConfig>({
+  ...INSURANCE_DEFAULTS,
+});
+// 跟 spec INSURANCE_MANAGEMENT_SPEC §11C 对齐: "恢复默认"应让 DB 回到
+// insurance_config_json=NULL 语义, 而不是把当前默认值固化成 JSON. 否则未来
+// spec defaults 调整时, 已"恢复默认"的 template 不会跟随升级.
+// 标记规则:
+//   - 点击"恢复默认" 按钮  → resetToDefault=true (PUT 只发 enabled)
+//   - 用户手改任意字段     → resetToDefault=false (PUT 8 字段 canonical)
+//   - 打开 dialog 默认 false (按"加载的实际配置"原样保存)
+const tplInsuranceResetToDefault = ref(false);
+
+async function openTplInsuranceModal(t: GameClubApi.RoomTemplate) {
+  tplInsuranceEditingId.value = t.template_id;
+  tplInsuranceEditingName.value = t.name;
+  tplInsuranceModalOpen.value = true;
+  tplInsuranceLoading.value = true;
+  tplInsuranceResetToDefault.value = false;
+  // 默认值先回填(防 dialog 第一帧空), 拉到真实配置后覆盖.
+  Object.assign(tplInsuranceForm, INSURANCE_DEFAULTS);
+  try {
+    const resp = await getRoomTemplateInsuranceConfig(
+      clubId.value,
+      t.template_id,
+    );
+    Object.assign(tplInsuranceForm, resp.config);
+  } catch (e: any) {
+    message.error(`加载保险配置失败: ${e?.message ?? e}`);
+  } finally {
+    tplInsuranceLoading.value = false;
+  }
+}
+
+function resetTplInsuranceToDefaults() {
+  Object.assign(tplInsuranceForm, INSURANCE_DEFAULTS);
+  tplInsuranceResetToDefault.value = true;
+}
+
+// 用户手改任意字段 → 清除"恢复默认"语义标记, 改回 canonical 8 字段保存路径.
+// (form 字段直接 v-model, Vue 不区分初始 vs 后续修改, 用 onUpdate hook 兜底)
+function onTplInsuranceFieldChange() {
+  if (tplInsuranceResetToDefault.value) {
+    tplInsuranceResetToDefault.value = false;
+  }
+}
+
+function validateTplInsuranceForm(): null | string {
+  const f = tplInsuranceForm;
+  if (!Number.isInteger(f.window_seconds) || f.window_seconds < 5 || f.window_seconds > 120) {
+    return '窗口秒数必须 5..120';
+  }
+  if (!Number.isInteger(f.min_pot_bb) || f.min_pot_bb < 0) {
+    return '最小底池 BB 必须 ≥ 0';
+  }
+  if (!Number.isInteger(f.max_outs) || f.max_outs < 1 || f.max_outs > 14) {
+    return '最大 Outs 必须 1..14';
+  }
+  if (!Number.isInteger(f.max_players) || f.max_players < 2 || f.max_players > 3) {
+    return '最多在保玩家必须 2..3';
+  }
+  for (const [k, label] of [
+    ['turn_cap_pot_ratio', '转牌保费上限'],
+    ['river_cap_pot_ratio', '河牌保费上限'],
+    ['payout_cap_pot_ratio', '赔付上限'],
+  ] as const) {
+    const v = (f as any)[k] as number;
+    if (typeof v !== 'number' || Number.isNaN(v) || v <= 0 || v > 1) {
+      return `${label}比例必须 (0, 1]`;
+    }
+  }
+  return null;
+}
+
+async function saveTplInsurance() {
+  if (tplInsuranceEditingId.value == null) return;
+  const err = validateTplInsuranceForm();
+  if (err) {
+    message.error(err);
+    return;
+  }
+  tplInsuranceSaving.value = true;
+  try {
+    // spec §11C: "恢复默认" 路径 PUT 只发 enabled, 让 DB insurance_config_json=NULL
+    // 走默认; 其他路径 PUT 8 字段 canonical encode.
+    const payload: GameClubApi.RoomTemplateInsuranceConfigRequest =
+      tplInsuranceResetToDefault.value
+        ? { enabled: tplInsuranceForm.enabled }
+        : { ...tplInsuranceForm };
+    await updateRoomTemplateInsuranceConfig(
+      clubId.value,
+      tplInsuranceEditingId.value,
+      payload,
+    );
+    message.success('保险设置已保存，仅对新创建房间生效，已创建房间不受影响。');
+    tplInsuranceModalOpen.value = false;
+    await reloadTemplates();
+  } catch (e: any) {
+    // 后端 400 兜底 (e.message 含 INSURANCE_CONFIG_INVALID).
+    message.error(`保存失败: ${e?.message ?? e}`);
+  } finally {
+    tplInsuranceSaving.value = false;
+  }
+}
+
 // OPS-B: 给会员充值 / 扣账
 function resetAdjustForm() {
   adjustForm.amount = 0;
@@ -564,7 +691,7 @@ async function submitAdjust() {
 function handleTabChange(key: number | string) {
   if (key === 'members' && members.value.length === 0) loadMembers();
   if (key === 'tables' && tables.value.length === 0) loadTables(1);
-  if (key === 'audit' && auditRows.value.length === 0) loadAudit(1);
+  if (key === 'matches' && matches.value.length === 0) loadMatches(1);
   if (key === 'ledger' && ledgerRows.value.length === 0) loadLedger(1);
   if (key === 'revenue' && !revenue.value) loadRevenue();
   if (key === 'wallet' && !clubWallet.value) loadWallet();
@@ -658,16 +785,51 @@ async function submitLeave() {
   }
 }
 
+/** 扫平台所有 is_robot=1 且 nickname 为空的陪玩账号,用词库随机补昵称.
+ *  endpoint 是平台级 (不限 club),所以此按钮在任意 club detail 都生效.
+ */
+const fillingBotNicknames = ref(false);
+function handleFillBotNicknames() {
+  Modal.confirm({
+    title: '重抽所有陪玩机器人昵称',
+    content:
+      '将扫描平台所有 is_robot=1 的陪玩账号,用词库 (形容词+名词) 重新随机生成昵称,**覆盖原有昵称**.\n' +
+      '若只想补充空昵称账号,请用增量模式 (onlyEmpty=true, 当前按钮走全量重抽).\n' +
+      '词库未导入或单边空时该条会跳过.\n' +
+      '注: 此操作不限当前俱乐部,作用于全平台机器人.\n继续?',
+    okText: '重抽',
+    okType: 'danger',
+    onOk: async () => {
+      fillingBotNicknames.value = true;
+      try {
+        const r = await fillBotNicknames();
+        Modal.success({
+          title: '重抽完成',
+          content: () =>
+            [
+              `扫描候选: ${r.scanned}`,
+              `成功重抽: ${r.filled}`,
+              `词库未就绪跳过: ${r.skippedPoolEmpty}`,
+              `失败: ${r.errors}`,
+            ].join('\n'),
+        });
+        await loadAutoPlayers();
+      } catch (e: any) {
+        message.error(e?.response?.data?.message ?? e?.message ?? '重抽失败');
+      } finally {
+        fillingBotNicknames.value = false;
+      }
+    },
+  });
+}
+
 function handleBack() {
   router.push({ path: '/game/club' });
 }
 
-function openTable(row: GameTableApi.TableListItem) {
-  router.push({
-    name: 'GameTableDetail',
-    query: { tableId: String(row.table_id) },
-  });
-}
+// ROOM-MATCH-1: Room is just a container, no detail page. Use Match Detail instead
+//   (router 'GameMatchDetail', wired in ROOM-MATCH-2). The Tables tab's 详情 button
+//   has been replaced with 当前对局 / 历史对局 entries that navigate into Match Detail.
 
 function statusTag(s: number) {
   if (s === 1) return { color: 'green', text: 'ACTIVE' };
@@ -696,6 +858,19 @@ function tableStateLabel(s: number) {
   }
 }
 
+function matchStatusLabel(s: number) {
+  switch (s) {
+    case 0:
+      return { color: 'blue', text: 'PLAYING' };
+    case 1:
+      return { color: 'green', text: 'SETTLED' };
+    case 2:
+      return { color: 'red', text: 'ABORTED' };
+    default:
+      return { color: 'default', text: `status=${s}` };
+  }
+}
+
 function directionLabel(d: number): string {
   if (d === 1) return 'CREDIT';
   if (d === -1) return 'DEBIT';
@@ -707,7 +882,7 @@ watch(clubId, (v, old) => {
     detail.value = null;
     members.value = [];
     tables.value = [];
-    auditRows.value = [];
+    matches.value = [];
     ledgerRows.value = [];
     revenue.value = null;
     loadDetail();
@@ -842,8 +1017,71 @@ onMounted(loadDetail);
         </Card>
       </TabPane>
 
-      <!-- Tables -->
-      <TabPane key="tables" tab="牌桌">
+      <!-- Matches (game_match): 单局历史; room_id 仅在 PLAYING 时有意义 -->
+      <TabPane key="matches" tab="对局">
+        <Card>
+          <div class="mb-2 flex justify-end">
+            <Button
+              :loading="matchesLoading"
+              size="small"
+              @click="loadMatches(matchesPage.current)"
+            >
+              刷新
+            </Button>
+          </div>
+          <Table
+            :data-source="matches"
+            :loading="matchesLoading"
+            :pagination="{
+              current: matchesPage.current,
+              pageSize: matchesPage.pageSize,
+              total: matchesPage.total,
+              showSizeChanger: false,
+              onChange: (p: number) => loadMatches(p),
+            }"
+            row-key="match_id"
+            size="small"
+            :columns="[
+              { title: 'Match ID', dataIndex: 'match_id', width: 110, fixed: 'left' },
+              { title: 'Game Kind', dataIndex: 'game_kind', width: 140 },
+              { title: '状态', dataIndex: 'status', width: 100 },
+              { title: '局号', dataIndex: 'match_no_in_room', width: 80 },
+              { title: '进行中房间', dataIndex: 'room_id', width: 120 },
+              { title: '玩家数', dataIndex: 'player_count', width: 90 },
+              { title: '底池', dataIndex: 'pot', width: 100 },
+              {
+                title: '开始时间',
+                dataIndex: 'started_at',
+                width: 170,
+                customRender: ({ value }) => (value ? formatDateTime(value) : '-'),
+              },
+              {
+                title: '结束时间',
+                dataIndex: 'ended_at',
+                width: 170,
+                customRender: ({ value }) => (value ? formatDateTime(value) : '-'),
+              },
+            ]"
+          >
+            <template #bodyCell="{ column, record }">
+              <template v-if="column.dataIndex === 'status'">
+                <Tag :color="matchStatusLabel(record.status).color">
+                  {{ matchStatusLabel(record.status).text }}
+                </Tag>
+              </template>
+              <template v-else-if="column.dataIndex === 'room_id'">
+                <span>{{ record.room_id ?? '-' }}</span>
+              </template>
+              <template v-else-if="column.dataIndex === 'pot'">
+                <span>{{ record.pot ?? '-' }}</span>
+              </template>
+            </template>
+          </Table>
+        </Card>
+      </TabPane>
+
+      <!-- Rooms (game_room): 长生命周期容器 -->
+      <TabPane key="tables" tab="房间">
         <Card>
           <div class="mb-2 flex justify-end">
             <Button :loading="tablesLoading" size="small" @click="loadTables(tablesPage.current)">
@@ -885,60 +1123,21 @@ onMounted(loadDetail);
                   {{ tableStateLabel(record.state).text }}
                 </Tag>
               </template>
+              <!-- ROOM-MATCH-1: 房间没有详情页. ROOM-MATCH-2 会在这里换成
+                   "进入对局" 按钮: 点击 → 看 row.current_match_id 直接跳 Match Detail. -->
               <template v-else-if="column.key === 'action'">
-                <Button
-                  size="small"
-                  type="link"
-                  @click="openTable(record as GameTableApi.TableListItem)"
-                >
-                  详情
-                </Button>
+                <Typography.Text type="secondary" style="font-size: 12px">
+                  对局详情见对局列表
+                </Typography.Text>
               </template>
             </template>
           </Table>
         </Card>
       </TabPane>
 
-      <!-- Game Records (audit, by club_id, scope_type='game_table' JOIN) -->
-      <TabPane key="audit" tab="游戏记录">
-        <Card>
-          <div class="mb-2 flex justify-between">
-            <Typography.Text type="secondary">
-              本俱乐部下所有桌的 audit (来自 game_audit_event JOIN game_table by club_id).
-              单局 hand-by-hand 明细请进牌桌详情 Hands tab.
-            </Typography.Text>
-            <Button :loading="auditLoading" size="small" @click="loadAudit(auditPage.current)">
-              刷新
-            </Button>
-          </div>
-          <Table
-            :data-source="auditRows"
-            :loading="auditLoading"
-            :pagination="{
-              current: auditPage.current,
-              pageSize: auditPage.pageSize,
-              total: auditPage.total,
-              showSizeChanger: false,
-              onChange: (p: number) => loadAudit(p),
-            }"
-            row-key="id"
-            size="small"
-            :columns="[
-              { title: 'ID', dataIndex: 'id', width: 80 },
-              { title: 'Table', dataIndex: 'scope_id', width: 110 },
-              { title: 'User', dataIndex: 'user_id', width: 130 },
-              { title: 'Event Type', dataIndex: 'event_type', width: 220 },
-              { title: 'Payload', dataIndex: 'payload_json', ellipsis: true },
-              {
-                title: '时间',
-                dataIndex: 'created_at',
-                width: 170,
-                customRender: ({ value }) => (value ? formatDateTime(value) : '-'),
-              },
-            ]"
-          />
-        </Card>
-      </TabPane>
+      <!-- ROOM-MATCH-1: 游戏记录 (audit) tab 已删. 跨 club 的 audit 列表是错的信息架构 —
+           audit 没有 match 上下文就是垃圾流. 单局 audit 应该挂在 Match Detail 上看
+           (/game/match/{matchId} Audit tab, ROOM-MATCH-2 加). -->
 
       <!-- Ledger (by club_id) -->
       <TabPane key="ledger" tab="资金流水">
@@ -1153,6 +1352,14 @@ onMounted(loadDetail);
             <InputNumber v-model:value="fillForm.count" :min="1" :max="9" style="width: 80px" />
             <Button @click="submitFill">补位并开局</Button>
             <Button danger @click="submitLeave">清空机器人</Button>
+            <span class="mx-2 text-gray-400">|</span>
+            <Button
+              danger
+              :loading="fillingBotNicknames"
+              @click="handleFillBotNicknames"
+            >
+              重抽机器人昵称
+            </Button>
           </div>
           <Table
             :data-source="autoPlayers"
@@ -1162,6 +1369,7 @@ onMounted(loadDetail);
             size="small"
             :columns="[
               { title: 'User ID', dataIndex: 'user_id', width: 140 },
+              { title: '昵称', dataIndex: 'nickname', width: 180 },
               { title: '托管启用', dataIndex: 'auto_play_enabled', width: 90 },
               { title: '风格', dataIndex: 'auto_play_profile', width: 90 },
               { title: '所在房间', dataIndex: 'current_room_id', width: 100 },
@@ -1434,7 +1642,7 @@ onMounted(loadDetail);
                 { title: '盲注', dataIndex: 'blind', width: 90 },
                 { title: '桌数 min/max', dataIndex: 'rooms', width: 120 },
                 { title: '难度', dataIndex: 'difficulty', width: 100 },
-                { title: '操作', dataIndex: 'action', width: 180 },
+                { title: '操作', dataIndex: 'action', width: 240 },
               ]"
             >
               <template #bodyCell="{ column, record }">
@@ -1458,6 +1666,13 @@ onMounted(loadDetail);
                     @click="openTplEdit(record as GameClubApi.RoomTemplate)"
                   >
                     编辑
+                  </Button>
+                  <Button
+                    type="link"
+                    size="small"
+                    @click="openTplInsuranceModal(record as GameClubApi.RoomTemplate)"
+                  >
+                    保险设置
                   </Button>
                   <Button
                     type="link"
@@ -1606,6 +1821,118 @@ onMounted(loadDetail);
           </FormItem>
         </div>
       </Form>
+    </Modal>
+
+    <!-- 房型保险设置 (INS-MGMT-B3 / V024) -->
+    <Modal
+      v-model:open="tplInsuranceModalOpen"
+      :title="`保险设置 — ${tplInsuranceEditingName}`"
+      width="640px"
+      :confirm-loading="tplInsuranceSaving"
+      :mask-closable="!tplInsuranceSaving"
+      ok-text="保存"
+      @ok="saveTplInsurance"
+    >
+      <Alert
+        type="info"
+        show-icon
+        message="保险设置仅对新创建房间生效；已创建的房间使用建房当时的快照配置，不受此处修改影响。"
+        class="mb-4"
+      />
+      <Form layout="vertical" :disabled="tplInsuranceLoading">
+        <FormItem label="启用保险">
+          <Switch
+            v-model:checked="tplInsuranceForm.enabled"
+            @change="onTplInsuranceFieldChange"
+          />
+        </FormItem>
+        <div class="grid grid-cols-2 gap-x-6">
+          <FormItem label="保险窗口秒数 (5..120)">
+            <InputNumber
+              v-model:value="tplInsuranceForm.window_seconds"
+              :min="5"
+              :max="120"
+              :step="1"
+              :precision="0"
+              class="w-full"
+              @change="onTplInsuranceFieldChange"
+            />
+          </FormItem>
+          <FormItem label="最小底池 (大盲数, ≥ 0)">
+            <InputNumber
+              v-model:value="tplInsuranceForm.min_pot_bb"
+              :min="0"
+              :step="1"
+              :precision="0"
+              class="w-full"
+              @change="onTplInsuranceFieldChange"
+            />
+          </FormItem>
+          <FormItem label="最大 Outs (1..14)">
+            <InputNumber
+              v-model:value="tplInsuranceForm.max_outs"
+              :min="1"
+              :max="14"
+              :step="1"
+              :precision="0"
+              class="w-full"
+              @change="onTplInsuranceFieldChange"
+            />
+          </FormItem>
+          <FormItem label="最多在保玩家 (2..3)">
+            <InputNumber
+              v-model:value="tplInsuranceForm.max_players"
+              :min="2"
+              :max="3"
+              :step="1"
+              :precision="0"
+              class="w-full"
+              @change="onTplInsuranceFieldChange"
+            />
+          </FormItem>
+          <FormItem label="转牌保费上限比例 (0, 1]">
+            <InputNumber
+              v-model:value="tplInsuranceForm.turn_cap_pot_ratio"
+              :min="0.01"
+              :max="1"
+              :step="0.05"
+              class="w-full"
+              @change="onTplInsuranceFieldChange"
+            />
+          </FormItem>
+          <FormItem label="河牌保费上限比例 (0, 1]">
+            <InputNumber
+              v-model:value="tplInsuranceForm.river_cap_pot_ratio"
+              :min="0.01"
+              :max="1"
+              :step="0.05"
+              class="w-full"
+              @change="onTplInsuranceFieldChange"
+            />
+          </FormItem>
+          <FormItem label="赔付池上限比例 (0, 1]">
+            <InputNumber
+              v-model:value="tplInsuranceForm.payout_cap_pot_ratio"
+              :min="0.01"
+              :max="1"
+              :step="0.05"
+              class="w-full"
+              @change="onTplInsuranceFieldChange"
+            />
+          </FormItem>
+        </div>
+      </Form>
+      <template #footer>
+        <Button :disabled="tplInsuranceLoading || tplInsuranceSaving" @click="resetTplInsuranceToDefaults">
+          恢复默认
+        </Button>
+        <Button :disabled="tplInsuranceSaving" @click="tplInsuranceModalOpen = false">
+          取消
+        </Button>
+        <Button type="primary" :loading="tplInsuranceSaving" @click="saveTplInsurance">
+          保存
+        </Button>
+      </template>
     </Modal>
   </Page>
 </template>

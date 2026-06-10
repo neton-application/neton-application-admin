@@ -78,11 +78,13 @@ export const useAuthStore = defineStore('auth', () => {
         if (accessStore.loginExpired) {
           accessStore.setLoginExpired(false);
         } else {
+          // 不依赖 preferences.app.defaultHomePath —— 该值可能被 localStorage
+          // 缓存的旧默认值（/analytics）污染（vben preferences merge 顺序 bug：
+          // state 排在 updates 之后导致缓存压过新默认）。直接落到 /dashboard。
+          // userInfo.homePath 由后端下发，优先级更高。
           onSuccess
             ? await onSuccess?.()
-            : await router.push(
-                userInfo.homePath || preferences.app.defaultHomePath,
-              );
+            : await router.push(userInfo.homePath || '/dashboard');
         }
 
         if (userInfo?.nickname) {

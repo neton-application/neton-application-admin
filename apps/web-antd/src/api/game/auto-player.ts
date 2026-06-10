@@ -12,6 +12,7 @@ export namespace GameAutoPlayerApi {
   export interface AutoPlayerRow {
     club_id: number;
     user_id: number;
+    nickname?: null | string;
     role: number;
     is_auto_player: boolean;
     auto_play_enabled: boolean;
