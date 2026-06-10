@@ -1,19 +1,19 @@
-import type { GameTableApi } from './table';
+import type { GameAdminRoomApi } from './admin-room';
 
 import { requestClient } from '#/api/request';
 
 /**
- * Game admin Hand History API — 单桌局历史 + 单局详情.
- * 对接 controller/admin/hand/HandsController (实际 /admin/game/tables/{id}/hands*).
+ * Game admin Hand History API — 单房间局历史 + 单局详情.
+ * 对接 controller/admin/hand/HandsController (实际 /admin/game/rooms/{id}/hands*).
  *
  * 概念边界 (GAME_SESSION_REPLAY_SPEC §1):
- *   - v1 没有显式 game_table_session 表; "session" 隐含 = 牌桌生命周期.
+ *   - v1 没有显式 session 表; "session" 隐含 = room 生命周期.
  *   - hand / round 一一对应 (game_round.round_id 即一手).
  *   - v1 没有 graphical replay; 此 API 只透出 action_log + ledger 两个真相源.
  *
- * 后端契约:
- *   GET /admin/game/tables/{id}/hands               单桌全部局 (默认 limit=200)
- *   GET /admin/game/tables/{id}/hands/{roundId}     单局 actions + ledger 详情
+ * 后端契约 (ROOM-MATCH-4 后):
+ *   GET /admin/game/rooms/{roomId}/hands               单房间全部局 (默认 limit=200)
+ *   GET /admin/game/rooms/{roomId}/hands/{roundId}     单局 actions + ledger 详情
  *   权限: game:hand:read
  */
 
@@ -59,11 +59,11 @@ export namespace GameHandApi {
     round_id: number;
     summary: HandSummary;
     actions: ActionLogEntry[];
-    ledger: GameTableApi.LedgerEntry[];
+    ledger: GameAdminRoomApi.LedgerEntry[];
   }
 }
 
-const BASE = '/game/tables';
+const BASE = '/game/rooms';
 
 /** 单桌全部局列表 (admin debug). */
 export async function getHandList(

@@ -4,8 +4,8 @@ import type { VxeTableGridOptions } from '#/adapter/vxe-table';
 export function useGridFormSchema(): VbenFormSchema[] {
   return [
     {
-      fieldName: 'table_id',
-      label: '桌 ID',
+      fieldName: 'room_id',
+      label: '房间 ID',
       component: 'InputNumber',
       componentProps: { allowClear: true, min: 1 },
     },
@@ -74,7 +74,7 @@ export function useGridFormSchema(): VbenFormSchema[] {
 
 export function useGridColumns(): VxeTableGridOptions['columns'] {
   return [
-    { field: 'table_id', title: '桌 ID', minWidth: 90 },
+    { field: 'table_id', title: 'Room ID', minWidth: 90 },
     { field: 'round_id', title: 'Round', minWidth: 80 },
     { field: 'user_id', title: '用户', minWidth: 130 },
     { field: 'currency_type', title: '币种', minWidth: 120 },

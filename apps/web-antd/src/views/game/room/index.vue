@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { VxeTableGridOptions } from '#/adapter/vxe-table';
-import type { GameTableApi } from '#/api/game/table';
+import type { GameAdminRoomApi } from '#/api/game/admin-room';
 
 import { useRouter } from 'vue-router';
 
@@ -9,26 +9,26 @@ import { Page, useVbenModal } from '@vben/common-ui';
 import { Modal, Tag } from 'ant-design-vue';
 
 import { ACTION_ICON, TableAction, useVbenVxeGrid } from '#/adapter/vxe-table';
-import { forceCloseTable, getTablePage } from '#/api/game/table';
+import { forceCloseRoom, getRoomPage } from '#/api/game/admin-room';
 import { $t } from '#/locales';
 
-import { TABLE_STATE_OPTIONS, useGridColumns, useGridFormSchema } from './data';
+import { ROOM_STATE_OPTIONS, useGridColumns, useGridFormSchema } from './data';
 
 const router = useRouter();
 
 // ROOM-MATCH-1: Room has no detail page. The action button below is gone; users
 //   navigate to Match Detail (ROOM-MATCH-2) from the Match list instead.
 
-function handleForceClose(row: GameTableApi.TableListItem) {
+function handleForceClose(row: GameAdminRoomApi.TableListItem) {
   Modal.confirm({
-    title: `强关桌 ${row.table_id}?`,
+    title: `强关桌 ${row.room_id}?`,
     content: `当前 state=${stateLabel(row.state)} phase=${row.phase ?? '-'}; 强关后玩家无法继续 action.`,
     okText: '确认强关',
     okType: 'danger',
     cancelText: '取消',
     onOk: async () => {
-      await forceCloseTable(row.table_id, { reason: 'admin force close' });
-      Modal.success({ title: `桌 ${row.table_id} 已 CLOSED` });
+      await forceCloseRoom(row.room_id, { reason: 'admin force close' });
+      Modal.success({ title: `桌 ${row.room_id} 已 CLOSED` });
       gridApi.reload();
     },
   });
@@ -36,7 +36,7 @@ function handleForceClose(row: GameTableApi.TableListItem) {
 
 function stateLabel(state: number): string {
   return (
-    TABLE_STATE_OPTIONS.find((o) => o.value === state)?.label ?? `state=${state}`
+    ROOM_STATE_OPTIONS.find((o) => o.value === state)?.label ?? `state=${state}`
   );
 }
 
@@ -60,7 +60,7 @@ function stateColor(state: number): string {
   }
 }
 
-const [Grid, gridApi] = useVbenVxeGrid<GameTableApi.TableListItem>({
+const [Grid, gridApi] = useVbenVxeGrid<GameAdminRoomApi.TableListItem>({
   formOptions: {
     schema: useGridFormSchema(),
   },
@@ -71,7 +71,7 @@ const [Grid, gridApi] = useVbenVxeGrid<GameTableApi.TableListItem>({
     proxyConfig: {
       ajax: {
         query: async ({ page }, formValues) => {
-          return await getTablePage({
+          return await getRoomPage({
             page: page.currentPage,
             page_size: page.pageSize,
             ...formValues,
@@ -80,14 +80,14 @@ const [Grid, gridApi] = useVbenVxeGrid<GameTableApi.TableListItem>({
       },
     },
     rowConfig: {
-      keyField: 'table_id',
+      keyField: 'room_id',
       isHover: true,
     },
     toolbarConfig: {
       refresh: true,
       search: true,
     },
-  } as VxeTableGridOptions<GameTableApi.TableListItem>,
+  } as VxeTableGridOptions<GameAdminRoomApi.TableListItem>,
 } as any);
 
 // 抑制 unused warning (modal helper 未直接用, 但保留导入以便后续接 modal 模式)
@@ -96,7 +96,7 @@ void useVbenModal;
 
 <template>
   <Page auto-content-height>
-    <Grid table-title="游戏牌桌管理">
+    <Grid table-title="房间管理">
       <template #stateCell="{ row }">
         <Tag :color="stateColor(row.state)">{{ stateLabel(row.state) }}</Tag>
       </template>
@@ -115,7 +115,7 @@ void useVbenModal;
               type: 'link',
               danger: true,
               icon: ACTION_ICON.DELETE,
-              auth: ['game:table:force_close'],
+              auth: ['game:room:force_close'],
               ifShow: () => row.state !== 3,
               onClick: handleForceClose.bind(null, row),
             },

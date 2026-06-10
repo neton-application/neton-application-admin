@@ -1,28 +1,27 @@
-import type { GameTableApi } from './table';
+import type { GameAdminRoomApi } from './admin-room';
 
 import { requestClient } from '#/api/request';
 
 /**
- * Game admin Ledger API — 跨桌 ledger 查询 + summary.
+ * Game admin Ledger API — 跨房间 ledger 查询 + summary.
  * 对接 controller/admin/ledger/LedgerController (实际 /admin/game/ledger/*).
  *
- * 后端契约 (game-admin-console A + P-admin-history-kind):
+ * 后端契约 (ROOM-MATCH-4 后):
  *   GET /admin/game/ledger/page
- *     filter: table_id, user_id, club_id, game_kind, currency_type, reason,
+ *     filter: room_id, user_id, club_id, game_kind, currency_type, reason,
  *             from, to, page, page_size
  *     返回 list + summary{total_debit, total_credit, net, row_count}
  *     权限: game:ledger:read
- *     game_kind: V004 schema 内置列, 直接 = (无 JOIN).
  */
 
 export namespace GameLedgerApi {
-  /** Ledger entry 单行 — 与 GameTableApi.LedgerEntry 同形态. */
-  export type Entry = GameTableApi.LedgerEntry;
+  /** Ledger entry 单行 — 与 GameAdminRoomApi.LedgerEntry 同形态. */
+  export type Entry = GameAdminRoomApi.LedgerEntry;
 
-  /** Summary — 与 GameTableApi.LedgerSummary 同形态. */
-  export type Summary = GameTableApi.LedgerSummary;
+  /** Summary — 与 GameAdminRoomApi.LedgerSummary 同形态. */
+  export type Summary = GameAdminRoomApi.LedgerSummary;
 
-  /** 跨桌 ledger 分页响应 (含 summary 模块). */
+  /** 跨房间 ledger 分页响应 (含 summary 模块). */
   export interface QueryResponse {
     list: Entry[];
     total: number;
@@ -36,7 +35,7 @@ export namespace GameLedgerApi {
   export interface QueryParams {
     page: number;
     page_size: number;
-    table_id?: number;
+    room_id?: number;
     user_id?: number;
     club_id?: number;
     game_kind?: string;

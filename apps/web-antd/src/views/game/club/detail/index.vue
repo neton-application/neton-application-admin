@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { GameAgentApi } from '#/api/game/agent';
 import type { GameClubApi } from '#/api/game/club';
-import type { GameTableApi } from '#/api/game/table';
+import type { GameAdminRoomApi } from '#/api/game/admin-room';
 import type { GameLedgerApi } from '#/api/game/ledger';
 import type { GameWalletApi } from '#/api/game/wallet';
 import type { GameWalletLedgerApi } from '#/api/game/wallet-ledger';
@@ -51,7 +51,7 @@ import {
   updateRoomTemplate,
   updateRoomTemplateInsuranceConfig,
 } from '#/api/game/club';
-import { getTablePage } from '#/api/game/table';
+import { getRoomPage } from '#/api/game/admin-room';
 import { getLedgerPage } from '#/api/game/ledger';
 import { getWalletLedgerPage, sourceTypeLabel } from '#/api/game/wallet-ledger';
 import {
@@ -76,7 +76,7 @@ import { fillBotNicknames } from '#/api/member/user';
  * 5 Tabs (与 spec doc 一致):
  *   - Overview: 基本信息 + member/table 统计 + 创建/更新时间
  *   - Members:  成员列表 (含 owner/admin/member 角色)
- *   - Tables:   本 club 桌列表 (复用 getTablePage + club_id filter)
+ *   - Tables:   本 club 桌列表 (复用 getRoomPage + club_id filter)
  *   - Ledger:   本 club 资金流水 (复用 getLedgerPage + club_id filter)
  *   - Revenue:  抽水统计 (read-only summary; 真实分账见 GAME_REVENUE_SHARE_SPEC v1.1+)
  *
@@ -99,7 +99,7 @@ const members = ref<GameClubApi.ClubMember[]>([]);
 const memberBalances = ref<Record<number, number>>({});
 
 const tablesLoading = ref(false);
-const tables = ref<GameTableApi.TableListItem[]>([]);
+const tables = ref<GameAdminRoomApi.RoomListItem[]>([]);
 const tablesPage = ref({ current: 1, pageSize: 20, total: 0 });
 
 // 对局 (game_match) tab —— 真相源 = game_match; room_id 只在 status=PLAYING 时回传.
@@ -166,7 +166,7 @@ async function loadTables(page = 1) {
   if (!clubId.value) return;
   tablesLoading.value = true;
   try {
-    const data = await getTablePage({
+    const data = await getRoomPage({
       page,
       page_size: tablesPage.value.pageSize,
       club_id: clubId.value,
@@ -1098,10 +1098,10 @@ onMounted(loadDetail);
               showSizeChanger: false,
               onChange: (p: number) => loadTables(p),
             }"
-            row-key="table_id"
+            row-key="room_id"
             size="small"
             :columns="[
-              { title: 'Table ID', dataIndex: 'table_id', width: 110, fixed: 'left' },
+              { title: 'Room ID', dataIndex: 'room_id', width: 110, fixed: 'left' },
               { title: 'Game Kind', dataIndex: 'game_kind', width: 160 },
               { title: '状态', dataIndex: 'state', width: 110 },
               { title: 'Phase', dataIndex: 'phase', width: 120 },
@@ -1160,7 +1160,7 @@ onMounted(loadDetail);
             row-key="created_at"
             size="small"
             :columns="[
-              { title: 'Table', dataIndex: 'table_id', width: 90 },
+              { title: 'Table', dataIndex: 'room_id', width: 90 },
               { title: 'Round', dataIndex: 'round_id', width: 80 },
               { title: 'User', dataIndex: 'user_id', width: 130 },
               { title: 'Currency', dataIndex: 'currency_type', width: 120 },

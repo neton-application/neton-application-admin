@@ -1,23 +1,28 @@
 import type { VbenFormSchema } from '#/adapter/form';
 import type { VxeTableGridOptions } from '#/adapter/vxe-table';
 
-/** 桌 state 整数 → 中文 label. 与 module-game model.GameTableState 对齐. */
-export const TABLE_STATE_OPTIONS = [
-  { label: 'OPEN', value: 0 },
+/**
+ * Room state 整数 → 中文 label. 与 module-game model.GameRoomStatus 对齐.
+ * ROOM-MATCH-4: 命名从 table 收敛到 room.
+ */
+export const ROOM_STATE_OPTIONS = [
+  { label: 'WAITING', value: 0 },
   { label: 'PLAYING', value: 1 },
-  { label: 'SETTLING', value: 2 },
+  { label: 'PAUSED', value: 2 },
   { label: 'CLOSED', value: 3 },
+  { label: 'CANCELLED', value: 4 },
+  { label: 'IDLE', value: 5 },
 ];
 
-/** 桌列表搜索表单. */
+/** 房间列表搜索表单. */
 export function useGridFormSchema(): VbenFormSchema[] {
   return [
     {
-      fieldName: 'table_id',
-      label: '桌 ID',
+      fieldName: 'room_id',
+      label: '房间 ID',
       component: 'InputNumber',
       componentProps: {
-        placeholder: 'table_id 精确匹配',
+        placeholder: 'room_id 精确匹配',
         allowClear: true,
         min: 1,
       },
@@ -40,7 +45,7 @@ export function useGridFormSchema(): VbenFormSchema[] {
       label: '状态',
       component: 'Select',
       componentProps: {
-        options: TABLE_STATE_OPTIONS,
+        options: ROOM_STATE_OPTIONS,
         allowClear: true,
         placeholder: '请选择状态',
       },
@@ -60,10 +65,10 @@ export function useGridFormSchema(): VbenFormSchema[] {
   ];
 }
 
-/** 桌列表列定义. */
+/** 房间列表列定义. */
 export function useGridColumns(): VxeTableGridOptions['columns'] {
   return [
-    { field: 'table_id', title: '桌 ID', minWidth: 100 },
+    { field: 'room_id', title: '房间 ID', minWidth: 100 },
     { field: 'game_kind', title: '玩法', minWidth: 120 },
     {
       field: 'state',
