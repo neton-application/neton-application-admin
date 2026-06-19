@@ -40,7 +40,7 @@ const sending = ref(false);
 const result = ref<PrivchatSystemMessageApi.SendResponse>();
 
 // sender 下拉
-const senderId = ref<null | number>(null);
+const senderId = ref<number | undefined>(undefined);
 const senders = ref<PrivchatSystemMessageApi.SenderItem[]>([]);
 const sendersLoading = ref(false);
 
@@ -84,7 +84,7 @@ watch(
       text.value = '';
       result.value = undefined;
       sending.value = false;
-      senderId.value = null;
+      senderId.value = undefined;
     }
   },
 );
@@ -100,7 +100,7 @@ async function handleSend() {
     };
     if (props.targetType === 'users') req.user_ids = [props.targetId];
     if (props.targetType === 'groups') req.group_ids = [props.targetId];
-    if (senderId.value !== null) req.sender_id = senderId.value;
+    if (senderId.value != null) req.sender_id = senderId.value;
     const resp = await sendSystemMessage(req);
     result.value = resp;
     if (resp.fail_count === 0) {

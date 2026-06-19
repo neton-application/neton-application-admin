@@ -282,8 +282,8 @@ onMounted(async () => {
             <template v-else-if="column.key === 'content'">
               <template v-if="record.message_type === 'image'">
                 <AImage
-                  v-if="imageUrlOf(record)"
-                  :src="imageUrlOf(record) ?? ''"
+                  v-if="imageUrlOf(record as PrivchatUserApi.Message)"
+                  :src="imageUrlOf(record as PrivchatUserApi.Message) ?? ''"
                   :width="120"
                   :preview="true"
                 />
@@ -292,8 +292,8 @@ onMounted(async () => {
 
               <template v-else-if="record.message_type === 'video'">
                 <video
-                  v-if="videoUrlOf(record)"
-                  :src="videoUrlOf(record) ?? ''"
+                  v-if="videoUrlOf(record as PrivchatUserApi.Message)"
+                  :src="videoUrlOf(record as PrivchatUserApi.Message) ?? ''"
                   controls
                   preload="metadata"
                   style="max-width: 240px; max-height: 160px"
@@ -303,8 +303,8 @@ onMounted(async () => {
 
               <template v-else-if="record.message_type === 'file'">
                 <a
-                  v-if="fileUrlOf(record)"
-                  :href="fileUrlOf(record) ?? ''"
+                  v-if="fileUrlOf(record as PrivchatUserApi.Message)"
+                  :href="fileUrlOf(record as PrivchatUserApi.Message) ?? ''"
                   rel="noopener"
                   target="_blank"
                 >

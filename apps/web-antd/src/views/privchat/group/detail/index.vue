@@ -221,7 +221,7 @@ onMounted(async () => {
                 type="link"
                 @click="handleViewMember(record.user_id)"
               >
-                {{ memberDisplayName(record) }}
+                {{ memberDisplayName(record as PrivchatGroupApi.Member) }}
               </Button>
             </template>
             <template v-else-if="column.key === 'joined_at'">
@@ -236,12 +236,12 @@ onMounted(async () => {
                 >
                   查看
                 </Button>
-                <template v-if="!isOwner(record)">
+                <template v-if="!isOwner(record as PrivchatGroupApi.Member)">
                   <Button
                     v-if="record.role !== 'admin'"
                     size="small"
                     type="link"
-                    @click="handleSetMemberRole(record, 'admin')"
+                    @click="handleSetMemberRole(record as PrivchatGroupApi.Member, 'admin')"
                   >
                     设为管理员
                   </Button>
@@ -249,7 +249,7 @@ onMounted(async () => {
                     v-if="record.role === 'admin'"
                     size="small"
                     type="link"
-                    @click="handleSetMemberRole(record, 'member')"
+                    @click="handleSetMemberRole(record as PrivchatGroupApi.Member, 'member')"
                   >
                     降为成员
                   </Button>
@@ -257,7 +257,7 @@ onMounted(async () => {
                     danger
                     size="small"
                     type="link"
-                    @click="handleRemoveMember(record)"
+                    @click="handleRemoveMember(record as PrivchatGroupApi.Member)"
                   >
                     移除
                   </Button>

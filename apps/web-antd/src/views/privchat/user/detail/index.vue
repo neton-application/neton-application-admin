@@ -338,14 +338,14 @@ onMounted(async () => {
                       type="link"
                       @click="handleViewFriend(record.user_id)"
                     >
-                      {{ friendDisplayName(record) }}
+                      {{ friendDisplayName(record as PrivchatUserApi.Friend) }}
                     </Button>
                   </template>
                   <template v-else-if="column.key === 'actions'">
                     <Button
                       size="small"
                       type="link"
-                      @click="handleViewChatHistory(record)"
+                      @click="handleViewChatHistory(record as PrivchatUserApi.Friend)"
                     >
                       查看聊天记录
                     </Button>

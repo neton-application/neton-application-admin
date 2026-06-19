@@ -31,7 +31,7 @@ const sending = ref(false);
 const result = ref<PrivchatSystemMessageApi.SendResponse>();
 
 // sender 下拉：null = 用 server 默认 SYSTEM_USER_ID
-const senderId = ref<null | number>(null);
+const senderId = ref<number | undefined>(undefined);
 const senders = ref<PrivchatSystemMessageApi.SenderItem[]>([]);
 const sendersLoading = ref(false);
 
@@ -118,7 +118,7 @@ async function handleSend() {
     if (targetType.value === 'users') req.user_ids = parsedIds.value;
     if (targetType.value === 'groups') req.group_ids = parsedIds.value;
     if (targetType.value === 'channels') req.channel_ids = parsedIds.value;
-    if (senderId.value !== null) req.sender_id = senderId.value;
+    if (senderId.value != null) req.sender_id = senderId.value;
     const resp = await sendSystemMessage(req);
     result.value = resp;
     if (resp.fail_count === 0) {
