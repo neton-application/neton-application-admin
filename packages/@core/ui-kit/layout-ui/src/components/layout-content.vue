@@ -27,6 +27,10 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {});
 
 const { contentElement, overlayStyle } = useLayoutContentStyle();
+// contentElement is bound via <main ref="contentElement"> below; vue-tsc does
+// not detect template-ref usage of a destructured composable ref, so mark it
+// explicitly used to satisfy noUnusedLocals (no runtime effect).
+void contentElement;
 
 const style = computed((): CSSProperties => {
   const {
