@@ -15,6 +15,7 @@ import { useGridColumns, useGridFormSchema } from './data';
 import BalanceForm from './modules/balance-form.vue';
 import Form from './modules/form.vue';
 import LevelForm from './modules/level-form.vue';
+import PasswordForm from './modules/password-form.vue';
 import PointForm from './modules/point-form.vue';
 
 const router = useRouter();
@@ -39,6 +40,12 @@ const [LevelFormModal, levelFormModalApi] = useVbenModal({
   destroyOnClose: true,
 });
 
+// destroyOnClose：关闭即销毁，明文密码不留在组件状态里。
+const [PasswordFormModal, passwordFormModalApi] = useVbenModal({
+  connectedComponent: PasswordForm,
+  destroyOnClose: true,
+});
+
 /** 刷新表格 */
 function handleRefresh() {
   gridApi.query();
@@ -57,6 +64,11 @@ function handleUpdateLevel(row: MemberUserApi.User) {
 /** 修改会员积分 */
 function handleUpdatePoint(row: MemberUserApi.User) {
   pointFormModalApi.setData(row).open();
+}
+
+/** 重设会员登录密码 */
+function handleUpdatePassword(row: MemberUserApi.User) {
+  passwordFormModalApi.setData(row).open();
 }
 
 /** 修改会员余额 */
@@ -130,6 +142,7 @@ const [Grid, gridApi] = useVbenVxeGrid<MemberUserApi.User>({
     <PointFormModal @success="handleRefresh" />
     <BalanceFormModal @success="handleRefresh" />
     <LevelFormModal @success="handleRefresh" />
+    <PasswordFormModal @success="handleRefresh" />
     <Grid table-title="会员列表">
       <template #actions="{ row }">
         <TableAction
@@ -159,6 +172,12 @@ const [Grid, gridApi] = useVbenVxeGrid<MemberUserApi.User>({
               type: 'link',
               auth: ['member:user:update-point'],
               onClick: handleUpdatePoint.bind(null, row),
+            },
+            {
+              label: '重设密码',
+              type: 'link',
+              auth: ['member:user:update-password'],
+              onClick: handleUpdatePassword.bind(null, row),
             },
             {
               label: '修改余额',

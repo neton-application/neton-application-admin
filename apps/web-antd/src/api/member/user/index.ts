@@ -38,6 +38,12 @@ export namespace MemberUserApi {
     point: number;
   }
 
+  /** 会员登录密码重设入参（明文只用于这次请求；服务端加盐哈希后落库） */
+  export interface UserPasswordUpdateReqVO {
+    id: number;
+    password: string;
+  }
+
   /** 批量补陪玩机器人昵称的统计结果 */
   export interface FillBotNicknamesResult {
     /** 扫到的候选数 (is_robot=1 且 nickname 为空) */
@@ -79,6 +85,11 @@ export function updateUserLevel(data: MemberUserApi.UserUpdateLevelReqVO) {
 /** 修改会员用户积分 */
 export function updateUserPoint(data: MemberUserApi.UserPointUpdateReqVO) {
   return requestClient.put('/member/user/update-point', data);
+}
+
+/** 重设会员登录密码（管理员操作，无需旧密码；明文只用于本次请求，不回显） */
+export function updateUserPassword(data: MemberUserApi.UserPasswordUpdateReqVO) {
+  return requestClient.put('/member/user/update-password', data);
 }
 
 /** 批量给 is_robot=1 且 nickname 为空的陪玩机器人补昵称(用词库随机生成). */

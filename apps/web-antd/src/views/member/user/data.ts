@@ -498,3 +498,56 @@ export function usePointFormSchema(): VbenFormSchema[] {
     },
   ];
 }
+
+/** 重设会员登录密码表单。管理员不需要旧密码；两次输入一致 + 至少 8 位（与注册链路一致）。 */
+export function usePasswordFormSchema(): VbenFormSchema[] {
+  return [
+    {
+      fieldName: 'id',
+      label: '用户编号',
+      component: 'Input',
+      componentProps: {
+        disabled: true,
+      },
+    },
+    {
+      fieldName: 'nickname',
+      label: '用户昵称',
+      component: 'Input',
+      componentProps: {
+        disabled: true,
+      },
+    },
+    {
+      fieldName: 'password',
+      label: '新密码',
+      component: 'InputPassword',
+      componentProps: {
+        placeholder: '请输入新密码（至少 8 位）',
+        autocomplete: 'new-password',
+      },
+      rules: z
+        .string({ message: '请输入新密码' })
+        .min(8, { message: '密码至少 8 位' })
+        .max(64, { message: '密码最多 64 位' }),
+    },
+    {
+      fieldName: 'confirmPassword',
+      label: '确认密码',
+      component: 'InputPassword',
+      componentProps: {
+        placeholder: '请再次输入新密码',
+        autocomplete: 'new-password',
+      },
+      dependencies: {
+        triggerFields: ['password', 'confirmPassword'],
+        rules: (values) =>
+          z
+            .string({ message: '请再次输入新密码' })
+            .refine((v) => v === values.password, {
+              message: '两次输入的密码不一致',
+            }),
+      },
+    },
+  ];
+}
