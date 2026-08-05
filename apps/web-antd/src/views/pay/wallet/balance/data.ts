@@ -95,7 +95,8 @@ export function useGridColumns(): VxeTableGridOptions['columns'] {
     {
       title: '操作',
       field: 'actions',
-      width: 80,
+      // 80 是只有「详情」时的宽度；加了银行卡/冻结记录之后会把文字切一半（实测显示成「查 银行卡」）。
+      width: 200,
       fixed: 'right',
       slots: { default: 'actions' },
     },

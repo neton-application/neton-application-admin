@@ -11,12 +11,23 @@ import { getWalletPage } from '#/api/pay/wallet/balance';
 import { $t } from '#/locales';
 
 import { useGridColumns, useGridFormSchema } from './data';
+import BankCards from './modules/bank-cards.vue';
 import Detail from './modules/detail.vue';
 
 const [DetailModal, detailModalApi] = useVbenModal({
   connectedComponent: Detail,
   destroyOnClose: true,
 });
+
+const [BankCardsModal, bankCardsModalApi] = useVbenModal({
+  connectedComponent: BankCards,
+  destroyOnClose: true,
+});
+
+/** 查该用户绑定的银行卡（掩码；完整卡号在弹窗里单独解密 + 审计）。 */
+function handleBankCards(row: Required<PayWalletApi.Wallet>) {
+  bankCardsModalApi.setData(row).open();
+}
 
 /** 刷新表格 */
 function handleRefresh() {
@@ -78,6 +89,7 @@ const [Grid, gridApi] = useVbenVxeGrid<PayWalletApi.Wallet>({
     </template>
 
     <DetailModal @reload="handleRefresh" />
+    <BankCardsModal />
     <Grid>
       <template #actions="{ row }">
         <TableAction
@@ -87,6 +99,12 @@ const [Grid, gridApi] = useVbenVxeGrid<PayWalletApi.Wallet>({
               type: 'link',
               icon: ACTION_ICON.VIEW,
               onClick: handleDetail.bind(null, row),
+            },
+            {
+              label: '银行卡',
+              type: 'link',
+              auth: ['pay:bank-card:list'],
+              onClick: handleBankCards.bind(null, row),
             },
             {
               label: '冻结记录',
