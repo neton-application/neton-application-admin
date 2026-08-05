@@ -1,6 +1,8 @@
 import type { VbenFormSchema } from '#/adapter/form';
 import type { VxeTableGridOptions } from '#/adapter/vxe-table';
 
+import { formatDateTime } from '@vben/utils';
+
 /** 1=提现冻结 2=单笔风控 3=账户冻结（司法） */
 export const FREEZE_TYPES = [
   { label: '提现冻结', value: 1 },
@@ -91,8 +93,10 @@ export function useGridColumns(): VxeTableGridOptions['columns'] {
       title: '到期',
       field: 'expiresAt',
       minWidth: 180,
+      // 0 = 无期限。有值时走和「下达时间」同一个格式化器，否则两列一个
+      // `2026-08-04 04:54:04`、一个 `8/4/2026, 4:32:54 AM`，同一行里读起来像两种数据。
       formatter: ({ cellValue }) =>
-        cellValue > 0 ? new Date(cellValue).toLocaleString() : '无期限',
+        cellValue > 0 ? formatDateTime(cellValue) : '无期限',
     },
     {
       title: '下达时间',

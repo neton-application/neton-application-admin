@@ -2,9 +2,12 @@
 import type { VxeTableGridOptions } from '#/adapter/vxe-table';
 import type { PayWalletFreezeApi } from '#/api/pay/wallet/freeze';
 
+import { onMounted } from 'vue';
+
 import { Page, useVbenModal } from '@vben/common-ui';
 
 import { message } from 'ant-design-vue';
+import { useRoute } from 'vue-router';
 
 import { ACTION_ICON, TableAction, useVbenVxeGrid } from '#/adapter/vxe-table';
 import {
@@ -14,12 +17,43 @@ import {
 } from '#/api/pay/wallet/freeze';
 
 import { useGridColumns, useGridFormSchema } from './data';
+import Detail from './modules/detail.vue';
 import Form from './modules/form.vue';
+
+const route = useRoute();
+
+/**
+ * 从钱包余额页「冻结记录」跳过来时带着 userId：把它填进搜索框再查一次。
+ *
+ * 只在 formOptions 里给初值是不够的——表单是异步建的，初值那会儿还没有它，
+ * 结果就是地址栏带着 userId、搜索框却空着、列表还是全量，运营以为这个人有
+ * 一堆冻结。填完必须自己触发一次查询。
+ */
+onMounted(async () => {
+  const userId = route.query.userId;
+  if (!userId) {
+    return;
+  }
+  await gridApi.formApi.setValues({ userId: String(userId) });
+  // 必须走「提交表单」而不是直接 query：query 读的是表单**提交后**的值，
+  // setValues 只填了控件。只 query 的结果是搜索框显示着 userId、列表却还是全量，
+  // 运营会以为这个人有一堆冻结记录。
+  await gridApi.formApi.submitForm();
+});
 
 const [FormModal, formModalApi] = useVbenModal({
   connectedComponent: Form,
   destroyOnClose: true,
 });
+
+const [DetailModal, detailModalApi] = useVbenModal({
+  connectedComponent: Detail,
+  destroyOnClose: true,
+});
+
+function handleDetail(row: PayWalletFreezeApi.Freeze) {
+  detailModalApi.setData(row).open();
+}
 
 function handleRefresh() {
   gridApi.query();
@@ -75,6 +109,7 @@ const [Grid, gridApi] = useVbenVxeGrid<PayWalletFreezeApi.Freeze>({
 <template>
   <Page auto-content-height>
     <FormModal @success="handleRefresh" />
+    <DetailModal />
     <Grid table-title="冻结管理">
       <template #toolbar-tools>
         <TableAction
@@ -106,6 +141,13 @@ const [Grid, gridApi] = useVbenVxeGrid<PayWalletFreezeApi.Freeze>({
       <template #actions="{ row }">
         <TableAction
           :actions="[
+            {
+              label: $t('common.detail'),
+              type: 'link',
+              icon: ACTION_ICON.VIEW,
+              auth: ['pay:wallet-freeze:list'],
+              onClick: handleDetail.bind(null, row),
+            },
             {
               label: '解除冻结',
               type: 'link',
