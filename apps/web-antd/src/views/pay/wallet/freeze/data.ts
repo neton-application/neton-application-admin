@@ -134,15 +134,15 @@ export function useRiskHoldFormSchema(): VbenFormSchema[] {
       fieldName: 'refId',
       label: '业务单号',
       component: 'Input',
-      componentProps: { placeholder: '触发冻结的账变流水 id 或唯一工单号' },
-      help: '幂等键：同一个单号重复下达是 no-op，不会重复冻结',
-      rules: 'required',
+      componentProps: { placeholder: '选填：触发冻结的账变流水 id 或工单号' },
+      help: '填了就是幂等键，同一个单号重复下达不会重复冻结；留空则每次提交都是一条新记录',
     },
     {
       fieldName: 'reasonText',
       label: '冻结原因',
       component: 'Textarea',
-      componentProps: { rows: 2 },
+      componentProps: { rows: 2, placeholder: '会显示给用户，请用对方看得懂的话' },
+      help: '⚠️ 用户在 App 的冻结详情里能看到这段话',
     },
   ];
 }
