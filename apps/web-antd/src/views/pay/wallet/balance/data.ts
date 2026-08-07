@@ -66,25 +66,25 @@ export function useGridColumns(): VxeTableGridOptions['columns'] {
       title: '余额',
       field: 'balance',
       minWidth: 120,
-      formatter: 'formatAmount2',
+      formatter: 'formatFenToYuanAmount',
     },
     {
       title: '累计支出',
       field: 'totalExpense',
       minWidth: 120,
-      formatter: 'formatAmount2',
+      formatter: 'formatFenToYuanAmount',
     },
     {
       title: '累计充值',
       field: 'totalRecharge',
       minWidth: 120,
-      formatter: 'formatAmount2',
+      formatter: 'formatFenToYuanAmount',
     },
     {
       title: '冻结金额',
       field: 'freezePrice',
       minWidth: 120,
-      formatter: 'formatAmount2',
+      formatter: 'formatFenToYuanAmount',
     },
     {
       title: '创建时间',
@@ -95,8 +95,8 @@ export function useGridColumns(): VxeTableGridOptions['columns'] {
     {
       title: '操作',
       field: 'actions',
-      // 80 是只有「详情」时的宽度；加了银行卡/冻结记录之后会把文字切一半（实测显示成「查 银行卡」）。
-      width: 200,
+      // 只剩「钱包流水 + 操作」两个可见项，其余收进下拉，不再需要 280。
+      width: 170,
       fixed: 'right',
       slots: { default: 'actions' },
     },
@@ -120,13 +120,13 @@ export function useTransactionGridColumns(): VxeTableGridOptions['columns'] {
       field: 'price',
       title: '交易金额',
       minWidth: 120,
-      formatter: 'formatAmount2',
+      formatter: 'formatFenToYuanAmount',
     },
     {
       field: 'balance',
       title: '钱包余额',
       minWidth: 120,
-      formatter: 'formatAmount2',
+      formatter: 'formatFenToYuanAmount',
     },
     {
       field: 'createTime',

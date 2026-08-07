@@ -3,7 +3,9 @@ import type { VxeTableGridOptions } from '#/adapter/vxe-table';
 import type { PayWalletApi } from '#/api/pay/wallet/balance';
 
 import { Page, useVbenModal } from '@vben/common-ui';
+import { IconifyIcon } from '@vben/icons';
 
+import { Button } from 'ant-design-vue';
 import { useRouter } from 'vue-router';
 
 import { ACTION_ICON, TableAction, useVbenVxeGrid } from '#/adapter/vxe-table';
@@ -11,6 +13,7 @@ import { getWalletPage } from '#/api/pay/wallet/balance';
 import { $t } from '#/locales';
 
 import { useGridColumns, useGridFormSchema } from './data';
+import FreezeForm from '../freeze/modules/form.vue';
 import BankCards from './modules/bank-cards.vue';
 import Detail from './modules/detail.vue';
 
@@ -37,6 +40,25 @@ function handleRefresh() {
 /** 查看钱包 */
 function handleDetail(row: Required<PayWalletApi.Wallet>) {
   detailModalApi.setData(row).open();
+}
+
+const [FreezeFormModal, freezeFormModalApi] = useVbenModal({
+  connectedComponent: FreezeForm,
+  destroyOnClose: true,
+});
+
+/**
+ * 从钱包这一行直接冻结这个账户，并把 userId 带进表单。
+ *
+ * 运营已经在看这一行了，再让他手抄一遍用户编号只会抄错，而抄错一位就是冻错人的钱。
+ */
+function handleFreezeAccount(row: Required<PayWalletApi.Wallet>) {
+  freezeFormModalApi.setData({ mode: 'judicial', userId: row.userId }).open();
+}
+
+/** 单笔风控冻结：冻住一笔可疑的钱，不动整个账户。 */
+function handleRiskHold(row: Required<PayWalletApi.Wallet>) {
+  freezeFormModalApi.setData({ mode: 'risk', userId: row.userId }).open();
 }
 
 const router = useRouter();
@@ -90,6 +112,7 @@ const [Grid, gridApi] = useVbenVxeGrid<PayWalletApi.Wallet>({
 
     <DetailModal @reload="handleRefresh" />
     <BankCardsModal />
+    <FreezeFormModal @success="handleRefresh" />
     <Grid>
       <template #actions="{ row }">
         <TableAction
@@ -100,21 +123,39 @@ const [Grid, gridApi] = useVbenVxeGrid<PayWalletApi.Wallet>({
               icon: ACTION_ICON.VIEW,
               onClick: handleDetail.bind(null, row),
             },
+          ]"
+          :drop-down-actions="[
             {
-              label: '银行卡',
-              type: 'link',
+              label: '查看银行卡',
               auth: ['pay:bank-card:list'],
               onClick: handleBankCards.bind(null, row),
             },
             {
+              label: '单笔冻结',
+              auth: ['pay:wallet-freeze:place'],
+              onClick: handleRiskHold.bind(null, row),
+            },
+            {
+              label: '冻结账户',
+              auth: ['pay:wallet-freeze:judicial'],
+              onClick: handleFreezeAccount.bind(null, row),
+            },
+            {
               label: '冻结记录',
-              type: 'link',
               auth: ['pay:wallet-freeze:list'],
+              // 没冻过的账户点进去只会看到一张空表，白跑一趟。
               ifShow: row.freezePrice > 0,
               onClick: handleFreezes.bind(null, row),
             },
           ]"
-        />
+        >
+          <template #more>
+            <Button type="link">
+              操作
+              <IconifyIcon icon="lucide:chevron-down" />
+            </Button>
+          </template>
+        </TableAction>
       </template>
     </Grid>
   </Page>

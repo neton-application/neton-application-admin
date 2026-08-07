@@ -75,7 +75,8 @@ const [Modal, modalApi] = useVbenModal({
     if (!isOpen) {
       return;
     }
-    mode.value = (modalApi.getData<{ mode?: Mode }>()?.mode ?? 'risk') as Mode;
+    const data = modalApi.getData<{ mode?: Mode; userId?: number }>();
+    mode.value = (data?.mode ?? 'risk') as Mode;
     formApi.setState({
       schema:
         mode.value === 'risk'
@@ -83,6 +84,11 @@ const [Modal, modalApi] = useVbenModal({
           : useJudicialFormSchema(),
     });
     await formApi.resetForm();
+    // 从钱包列表某一行点进来时已经知道是谁了，不该让运营再手抄一遍用户编号——
+    // 抄错一位就是冻错人的账户。
+    if (data?.userId) {
+      await formApi.setValues({ userId: String(data.userId) });
+    }
   },
 });
 </script>
