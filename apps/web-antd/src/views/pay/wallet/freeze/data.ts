@@ -156,27 +156,22 @@ export function useJudicialFormSchema(): VbenFormSchema[] {
       component: 'Input',
       rules: 'required',
     },
-    {
-      fieldName: 'targetAmount',
-      label: '目标冻结额',
-      component: 'InputNumber',
-      componentProps: { min: 0.01, precision: 2, addonAfter: '元' },
-      help: '留空 = 全额冻结，后续到账继续吸收',
-    },
+    // 目标冻结额已去掉：账户冻结的语义就是「冻住整个账户」，后续到账继续吸收。
+    // 服务端仍支持定额（targetAmount），但那不是这个入口该暴露的选择——
+    // 留一个可填可不填的金额框，只会让运营以为「不填=不冻」。
     {
       fieldName: 'legalDocNo',
       label: '法律文书号',
       component: 'Input',
-      help: '同时是幂等键',
-      rules: 'required',
+      help: '选填。填了就是幂等键，并会作为「关联单号」显示给用户；紧急处置可先冻结、文书后补',
     },
     {
       fieldName: 'confirmDocNo',
       label: '确认文书号',
       component: 'Input',
       // 二次确认绑在文书号上而不是一个复选框：要求经办人再核对一遍写的是哪份文书。
-      help: '再输入一次，两次必须一致',
-      rules: 'required',
+      // 文书号留空时无需确认——没有东西可核对。
+      help: '填了文书号才需要再输一次，两次必须一致',
     },
     {
       fieldName: 'expiresAt',
@@ -187,10 +182,10 @@ export function useJudicialFormSchema(): VbenFormSchema[] {
     },
     {
       fieldName: 'reasonText',
-      label: '冻结依据',
+      label: '冻结说明',
       component: 'Textarea',
-      componentProps: { rows: 2 },
-      help: '不下发给用户',
+      componentProps: { rows: 2, placeholder: '会显示给用户，请用对方看得懂的话' },
+      help: '⚠️ 用户在 App 的冻结详情里能看到这段话，不要写办案细节',
     },
   ];
 }

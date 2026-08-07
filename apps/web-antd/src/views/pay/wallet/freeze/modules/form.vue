@@ -37,10 +37,12 @@ const [Modal, modalApi] = useVbenModal({
       return;
     }
     const values = (await formApi.getValues()) as Record<string, any>;
+    // 文书号是选填的：填了才需要二次核对，没填就没有东西可核对。
+    const docNo = String(values.legalDocNo ?? '').trim();
     if (
       mode.value === 'judicial' &&
-      String(values.legalDocNo ?? '').trim() !==
-        String(values.confirmDocNo ?? '').trim()
+      docNo !== '' &&
+      docNo !== String(values.confirmDocNo ?? '').trim()
     ) {
       message.error('两次输入的法律文书号不一致');
       return;
@@ -51,17 +53,14 @@ const [Modal, modalApi] = useVbenModal({
         ? placeRiskHold({
             userId: Number(values.userId),
             amount: yuanToFen(values.amount),
-            refId: String(values.refId).trim(),
+            refId: String(values.refId ?? '').trim() || undefined,
             reasonText: values.reasonText || undefined,
           })
         : placeJudicialFreeze({
             userId: Number(values.userId),
-            // 留空 = 全额冻结（无上限），不是 0。
-            targetAmount:
-              values.targetAmount == null || values.targetAmount === ''
-                ? null
-                : yuanToFen(values.targetAmount),
-            legalDocNo: String(values.legalDocNo).trim(),
+            // 账户冻结永远是全额：冻住整个账户，后续到账继续吸收。
+            targetAmount: null,
+            legalDocNo: docNo || undefined,
             reasonText: values.reasonText || undefined,
             expiresAt: values.expiresAt ? Number(values.expiresAt) : 0,
           }));

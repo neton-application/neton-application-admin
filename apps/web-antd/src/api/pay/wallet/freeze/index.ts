@@ -28,17 +28,19 @@ export namespace PayWalletFreezeApi {
   export interface PlaceRiskHoldReqVO {
     userId: number;
     amount: number;
-    /** 幂等键：账变流水 id 或唯一工单号 */
-    refId: string;
+    /** 幂等键，选填：账变流水 id 或工单号。留空则服务端自造，且不作为单号下发给用户 */
+    refId?: string;
     reasonText?: string;
   }
 
   /** 账户冻结（司法）：targetAmount 留空 = 全额冻结。 */
   export interface PlaceJudicialReqVO {
     userId: number;
+    /** 账户冻结恒为全额，这里固定传 null（服务端仍支持定额，但入口不暴露） */
     targetAmount?: null | number;
-    /** 法律文书号，同时是幂等键 */
-    legalDocNo: string;
+    /** 法律文书号，选填；填了即幂等键，并作为「关联单号」显示给用户 */
+    legalDocNo?: string;
+    /** 冻结说明——**会显示给用户** */
     reasonText?: string;
     /** epoch 毫秒；0 = 无期限 */
     expiresAt?: number;
