@@ -12,6 +12,52 @@ packages:
   - scripts/*
   - docs
 
+
+# 这些原本分散在 package.json 的 "pnpm" 字段和 .npmrc；
+# pnpm 11 起两处都不再读，配置一律落在这里。
+peerDependencyRules:
+  allowedVersions:
+    eslint: '*'
+
+overrides:
+  '@ast-grep/napi': 'catalog:'
+  '@ctrl/tinycolor': 'catalog:'
+  clsx: 'catalog:'
+  esbuild: 0.25.3
+  jiti: 'catalog:'
+  pinia: 'catalog:'
+  vue: 'catalog:'
+
+# 依赖的构建脚本默认不执行，逐个显式表态（pnpm 11 起要求）。
+# true = 装的是原生二进制或 git hooks，不跑脚本就用不了；
+# false = 脚本只打印赞助信息之类，跑不跑都一样。
+allowBuilds:
+  '@carbon/icons': false
+  '@parcel/watcher': true
+  core-js: false
+  core-js-pure: false
+  esbuild: true
+  lefthook: true
+  less: false
+  unrs-resolver: true
+  vue-demi: true
+
+# postcss / eslint / prettier 等要提升到根 node_modules，
+# 否则各 app 的 postcss.config.mjs 按名字加载插件时找不到。
+publicHoistPattern:
+  - lefthook
+  - eslint
+  - prettier
+  - prettier-plugin-tailwindcss
+  - stylelint
+  - '*postcss*'
+  - '@commitlint/*'
+  - czg
+
+strictPeerDependencies: false
+autoInstallPeers: true
+dedupePeerDependents: true
+
 catalog:
   '@ast-grep/napi': ^0.39.9
   '@changesets/changelog-github': ^0.5.1
