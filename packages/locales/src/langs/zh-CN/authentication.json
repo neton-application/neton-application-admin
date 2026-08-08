@@ -1,7 +1,5 @@
 {
   "welcomeBack": "欢迎回来",
-  "pageTitle": "Neton Application 管理后台",
-  "pageDesc": "基于 Neton Framework 的企业级管理后台",
   "loginSuccess": "登录成功",
   "loginSuccessDesc": "欢迎回来",
   "loginSubtitle": "请输入您的帐户信息以开始管理您的项目",
