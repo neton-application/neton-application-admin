@@ -86,6 +86,10 @@ export namespace PrivchatUserApi {
     updated_at?: number;
     deleted: boolean;
     revoked: boolean;
+    /** 发送方全局展示字段（server LEFT JOIN privchat_users；账号已删除时为 null）。 */
+    sender_username?: string;
+    sender_display_name?: string;
+    sender_avatar_url?: string;
   }
 }
 

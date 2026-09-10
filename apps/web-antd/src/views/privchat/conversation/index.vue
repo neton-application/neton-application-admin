@@ -76,16 +76,14 @@ const headerTitle = computed(() => {
   return '聊天记录';
 });
 
-// 群聊：sender_id → 显示昵称。优先级：群内 nickname > 全局 display_name > username。
-const groupSenderNameMap = computed<Record<number, string>>(() => {
-  const map: Record<number, string> = {};
-  for (const m of group.value?.members ?? []) {
-    if (m.user_id == null) continue;
-    const name = m.nickname ?? m.display_name ?? m.username;
-    if (name) map[m.user_id] = name;
-  }
-  return map;
-});
+// 发送方显示名直接取消息自带的字段（server LEFT JOIN privchat_users 带回）。
+// 以前这里靠群详情内嵌的整份花名册来翻译 sender_id —— 群成员改分页后那份数据
+// 没了，而且大群本来也不该为了显示几个名字把全表拉下来。
+//
+// 入参放宽成 Partial：antd 的 #bodyCell 把 record 给成 Record<string, any>。
+function messageSenderName(m: Partial<PrivchatUserApi.Message>): string {
+  return m.sender_display_name ?? m.sender_username ?? `uid:${m.sender_id}`;
+}
 
 async function loadAll() {
   if (mode === 'invalid') {
@@ -145,26 +143,7 @@ function formatTime(ts?: number) {
   return new Date(ts).toLocaleString('zh-CN');
 }
 
-function senderName(senderId: number): string {
-  if (mode === 'direct') {
-    if (senderId === uid) {
-      return (
-        self.value?.display_name ??
-        self.value?.username ??
-        `uid:${senderId}`
-      );
-    }
-    if (senderId === peerUid) {
-      return (
-        peer.value?.display_name ??
-        peer.value?.username ??
-        `uid:${senderId}`
-      );
-    }
-    return `uid:${senderId}`;
-  }
-  return groupSenderNameMap.value[senderId] ?? `uid:${senderId}`;
-}
+
 
 function senderColor(senderId: number): string | undefined {
   if (mode === 'direct' && senderId === uid) {
@@ -275,7 +254,7 @@ onMounted(async () => {
           <template #bodyCell="{ column, record }">
             <template v-if="column.key === 'sender'">
               <span :style="{ color: senderColor(record.sender_id) }">
-                {{ senderName(record.sender_id) }}
+                {{ messageSenderName(record) }}
               </span>
             </template>
 
