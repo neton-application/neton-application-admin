@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { VxeTableGridOptions } from '#/adapter/vxe-table';
-import type { MemberUserApi } from '#/api/member/user';
+import type { MemberUserApi } from '#/api/account/user';
 
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -8,7 +8,7 @@ import { useRouter } from 'vue-router';
 import { Page, useVbenModal } from '@vben/common-ui';
 
 import { ACTION_ICON, TableAction, useVbenVxeGrid } from '#/adapter/vxe-table';
-import { getUserPage } from '#/api/member/user';
+import { getUserPage } from '#/api/account/user';
 import { $t } from '#/locales';
 
 import { useGridColumns, useGridFormSchema } from './data';
@@ -88,7 +88,7 @@ function handleRowCheckboxChange({
 /** 查看会员详情 */
 function handleViewDetail(row: MemberUserApi.User) {
   router.push({
-    name: 'MemberUserDetail',
+    name: 'AccountUserDetail',
     query: {
       id: row.id,
     },
@@ -158,25 +158,25 @@ const [Grid, gridApi] = useVbenVxeGrid<MemberUserApi.User>({
             {
               label: $t('common.edit'),
               type: 'link',
-              auth: ['member:user:update'],
+              auth: ['account:user:update'],
               onClick: handleEdit.bind(null, row),
             },
             {
               label: '修改等级',
               type: 'link',
-              auth: ['member:user:update-level'],
+              auth: ['member:profile:update'],
               onClick: handleUpdateLevel.bind(null, row),
             },
             {
               label: '修改积分',
               type: 'link',
-              auth: ['member:user:update-point'],
+              auth: ['member:profile:update'],
               onClick: handleUpdatePoint.bind(null, row),
             },
             {
               label: '重设密码',
               type: 'link',
-              auth: ['member:user:update-password'],
+              auth: ['account:user:update-password'],
               onClick: handleUpdatePassword.bind(null, row),
             },
             {

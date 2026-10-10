@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { MemberUserApi } from '#/api/member/user';
+import type { MemberUserApi } from '#/api/account/user';
 
 import { h } from 'vue';
 

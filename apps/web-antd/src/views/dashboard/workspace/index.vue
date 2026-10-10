@@ -97,7 +97,7 @@ const quickNavItems: WorkbenchQuickNavItem[] = [
     color: '#52c41a',
     icon: 'lucide:user-round-cog',
     title: '会员管理',
-    url: '/member/user',
+    url: '/account/user',
   },
   {
     color: '#fa8c16',

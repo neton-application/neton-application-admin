@@ -10,7 +10,6 @@ import { convertToInteger, formatToFraction } from '@vben/utils';
 import { Tag } from 'ant-design-vue';
 
 import { z } from '#/adapter/form';
-import { getSimpleGroupList } from '#/api/member/group';
 import { getSimpleLevelList } from '#/api/member/level';
 import { getSimpleTagList } from '#/api/member/tag';
 import { getAreaTree } from '#/api/system/area';
@@ -111,17 +110,6 @@ export function useFormSchema(): VbenFormSchema[] {
       },
     },
     {
-      fieldName: 'groupId',
-      label: '用户分组',
-      component: 'ApiSelect',
-      componentProps: {
-        api: getSimpleGroupList,
-        labelField: 'name',
-        valueField: 'id',
-        placeholder: '请选择用户分组',
-      },
-    },
-    {
       fieldName: 'mark',
       label: '会员备注',
       component: 'Textarea',
@@ -181,30 +169,6 @@ export function useGridFormSchema(): VbenFormSchema[] {
         valueField: 'id',
         mode: 'multiple',
         placeholder: '请选择用户标签',
-        allowClear: true,
-      },
-    },
-    {
-      fieldName: 'levelId',
-      label: '用户等级',
-      component: 'ApiSelect',
-      componentProps: {
-        api: getSimpleLevelList,
-        labelField: 'name',
-        valueField: 'id',
-        placeholder: '请选择用户等级',
-        allowClear: true,
-      },
-    },
-    {
-      fieldName: 'groupId',
-      label: '用户分组',
-      component: 'ApiSelect',
-      componentProps: {
-        api: getSimpleGroupList,
-        labelField: 'name',
-        valueField: 'id',
-        placeholder: '请选择用户分组',
         allowClear: true,
       },
     },
