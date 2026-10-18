@@ -4,6 +4,7 @@
 import type { RequestClientOptions } from '@vben/request';
 
 import { useAppConfig } from '@vben/hooks';
+import { $t, $te, i18n } from '@vben/locales';
 import { preferences } from '@vben/preferences';
 import {
   authenticateResponseInterceptor,
@@ -22,6 +23,23 @@ import { refreshTokenApi } from './core';
 
 const { apiURL } = useAppConfig(import.meta.env, import.meta.env.PROD);
 const apiEncrypt = createApiEncrypt(import.meta.env);
+
+const MACHINE_CODE = /^[A-Z][A-Z0-9_]{2,}$/;
+
+/**
+ * 后端业务错误的 message 是模块机器码（如 ROLE_NOT_FOUND）：按 `langs/<语言>/error-<模块>.json`
+ * 翻译，与新后台 front 的 `error.<CODE>` 是同一套码。找不到翻译时原样返回。
+ */
+function describeMachineCode(message: string): string {
+  if (!MACHINE_CODE.test(message)) return message;
+  const locale = i18n.global.locale.value;
+  const namespaces = Object.keys(i18n.global.getLocaleMessage(locale) ?? {});
+  for (const namespace of namespaces) {
+    const key = `${namespace}.${message}`;
+    if (namespace.startsWith('error-') && $te(key)) return $t(key);
+  }
+  return message;
+}
 
 function createRequestClient(baseURL: string, options?: RequestClientOptions) {
   const client = new RequestClient({
@@ -150,7 +168,7 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
         return;
       }
       // 如果没有错误信息，则会根据状态码进行提示
-      message.error(errorMessage || msg);
+      message.error(describeMachineCode(errorMessage) || msg);
     }),
   );
 
