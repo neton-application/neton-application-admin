@@ -1,0 +1,15 @@
+{
+  "APP_ID_INVALID": "appId is invalid or disabled.",
+  "CHARGE_SERVICE_UNAVAILABLE": "Billing is temporarily unavailable. Please try again later.",
+  "CLIENT_NOT_BOUND": "API access is not enabled for this account yet.",
+  "CLIENT_NOT_FOUND": "Client not found. It may have been deleted.",
+  "CONTACT_MOBILE_INVALID": "Enter a valid 11-digit contact phone number.",
+  "LOG_NOT_FOUND": "Call log not found.",
+  "ORDER_CREATE_RATE_LIMITED": "Too many orders. Please try again later.",
+  "ORDER_ID_REQUIRED": "orderId is required.",
+  "ORDER_NOT_FOUND": "Order not found.",
+  "ORDER_QUERY_RATE_LIMITED": "Too many order queries. Please try again later.",
+  "SIGNATURE_INVALID": "Signature verification failed.",
+  "TIMESTAMP_EXPIRED": "Request expired: timestamp is more than 5 minutes from server time.",
+  "TIMESTAMP_INVALID": "timestamp must be a Unix time in seconds."
+}

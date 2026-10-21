@@ -1,0 +1,7 @@
+{
+  "INTERACTION_RATE_LIMITED": "Too many interactions, please try again later",
+  "INVALID_CURSOR": "The page cursor has expired; refresh and try again",
+  "INVALID_INTERACTION_KIND": "Unknown interaction type",
+  "INVALID_OBJECT_REF": "Invalid object reference",
+  "TOO_MANY_OBJECTS": "Too many objects in one request"
+}

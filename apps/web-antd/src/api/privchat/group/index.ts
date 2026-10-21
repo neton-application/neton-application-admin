@@ -18,7 +18,7 @@ export namespace PrivchatGroupApi {
     updated_at: number;
   }
 
-  /** 群成员（嵌在群详情）。 */
+  /** 群成员（`GET /privchat/group/detail/{id}/members` 分页返回）。 */
   export interface Member {
     user_id: number;
     role?: string;
@@ -31,12 +31,22 @@ export namespace PrivchatGroupApi {
     avatar_url?: string;
   }
 
-  /** 群详情：列表所有字段 + members 数组 + 群主全局展示字段。 */
+  /**
+   * 群详情：列表所有字段 + 群主全局展示字段。
+   *
+   * 不含 members —— 万人群一次性全返会把详情接口拖死，成员改走分页接口
+   * [getGroupMembers]，总数看 member_count。
+   */
   export interface GroupDetail extends Group {
     owner_username?: string;
     owner_display_name?: string;
     owner_avatar_url?: string;
-    members?: Member[];
+  }
+
+  /** 群成员分页（vxe/antd 适配；total 是库里的活跃成员总数，不是本页条数）。 */
+  export interface MemberPageResult {
+    list: Member[];
+    total: number;
   }
 
   /** 群组列表（vxe-table 适配）。 */
@@ -60,11 +70,23 @@ export async function getGroupPage(params: {
   return { list: data.groups ?? [], total: data.total ?? 0 };
 }
 
-/** 群详情（含群成员）。 */
+/** 群详情（不含群成员，成员走 [getGroupMembers]）。 */
 export function getGroupDetail(groupId: number) {
   return requestClient.get<PrivchatGroupApi.GroupDetail>(
     `${BASE}/detail/${groupId}`,
   );
+}
+
+/** 群成员分页。默认每页 20；server 侧 pageSize 会被 clamp 到 [1, 200]。 */
+export async function getGroupMembers(
+  groupId: number,
+  params: { pageNo: number; pageSize: number },
+): Promise<PrivchatGroupApi.MemberPageResult> {
+  const data = await requestClient.get<{
+    members: PrivchatGroupApi.Member[];
+    total: number;
+  }>(`${BASE}/detail/${groupId}/members`, { params });
+  return { list: data.members ?? [], total: data.total ?? 0 };
 }
 
 /** 群消息（vxe-table 适配；server 用 channel_id 过滤）。 */

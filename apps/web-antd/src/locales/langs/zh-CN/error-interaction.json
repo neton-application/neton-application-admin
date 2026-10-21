@@ -1,0 +1,7 @@
+{
+  "INTERACTION_RATE_LIMITED": "操作太频繁，请稍后再试",
+  "INVALID_CURSOR": "分页游标已失效，请刷新后重试",
+  "INVALID_INTERACTION_KIND": "互动类型不正确",
+  "INVALID_OBJECT_REF": "对象标识不正确",
+  "TOO_MANY_OBJECTS": "一次查询的对象太多"
+}

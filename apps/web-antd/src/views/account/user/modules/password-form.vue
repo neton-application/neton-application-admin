@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { MemberUserApi } from '#/api/member/user';
+import type { MemberUserApi } from '#/api/account/user';
 
 import { computed, ref } from 'vue';
 
@@ -8,7 +8,7 @@ import { useVbenModal } from '@vben/common-ui';
 import { message } from 'ant-design-vue';
 
 import { useVbenForm } from '#/adapter/form';
-import { getUser, updateUserPassword } from '#/api/member/user';
+import { getUser, updateUserPassword } from '#/api/account/user';
 import { $t } from '#/locales';
 
 import { usePasswordFormSchema } from '../data';

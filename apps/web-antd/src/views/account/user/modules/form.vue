@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { MemberUserApi } from '#/api/member/user';
+import type { MemberUserApi } from '#/api/account/user';
 
 import { computed, ref } from 'vue';
 
@@ -8,15 +8,17 @@ import { useVbenModal } from '@vben/common-ui';
 import { message } from 'ant-design-vue';
 
 import { useVbenForm } from '#/adapter/form';
-import { getUser, updateUserPoint } from '#/api/member/user';
+import { getUser, updateUser } from '#/api/account/user';
 import { $t } from '#/locales';
 
-import { usePointFormSchema } from '../data';
+import { useFormSchema } from '../data';
 
 const emit = defineEmits(['success']);
 const formData = ref<MemberUserApi.User>();
 const getTitle = computed(() => {
-  return $t('ui.actionTitle.edit', ['用户积分']);
+  return formData.value?.id
+    ? $t('ui.actionTitle.edit', ['会员'])
+    : $t('ui.actionTitle.create', ['会员']);
 });
 
 const [Form, formApi] = useVbenForm({
@@ -28,7 +30,7 @@ const [Form, formApi] = useVbenForm({
     labelWidth: 80,
   },
   layout: 'horizontal',
-  schema: usePointFormSchema(),
+  schema: useFormSchema(),
   showDefaultActions: false,
 });
 
@@ -40,12 +42,9 @@ const [Modal, modalApi] = useVbenModal({
     }
     modalApi.lock();
     // 提交表单
-    const data = await formApi.getValues();
+    const data = (await formApi.getValues()) as MemberUserApi.User;
     try {
-      await updateUserPoint({
-        id: data.id,
-        point: data.changePoint * data.changeType,
-      });
+      await updateUser(data);
       // 关闭并提示
       await modalApi.close();
       emit('success');

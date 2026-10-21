@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { MemberUserApi } from '#/api/member/user';
+import type { MemberUserApi } from '#/api/account/user';
 import type { PayWalletApi } from '#/api/pay/wallet/balance';
 
 import { onMounted, ref } from 'vue';
@@ -10,7 +10,7 @@ import { useTabs } from '@vben/hooks';
 
 import { Button, Card, message, TabPane, Tabs } from 'ant-design-vue';
 
-import { getUser } from '#/api/member/user';
+import { getUser } from '#/api/account/user';
 import { getWalletByUserId } from '#/api/pay/wallet/balance';
 import { $t } from '#/locales';
 

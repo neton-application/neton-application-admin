@@ -23,6 +23,7 @@ import {
 import {
   dissolveGroup,
   getGroupDetail,
+  getGroupMembers,
   removeGroupMember,
   setGroupMemberRole,
 } from '#/api/privchat/group';
@@ -36,6 +37,33 @@ const groupId = Number(route.query.groupId);
 
 const group = ref<PrivchatGroupApi.GroupDetail>();
 const loading = ref(false);
+
+// 群成员走服务端分页：群详情接口不再内嵌花名册。
+const members = ref<PrivchatGroupApi.Member[]>([]);
+const membersLoading = ref(false);
+const membersTotal = ref(0);
+const membersPage = ref(1);
+const membersPageSize = ref(20);
+
+async function loadMembers() {
+  membersLoading.value = true;
+  try {
+    const res = await getGroupMembers(groupId, {
+      pageNo: membersPage.value,
+      pageSize: membersPageSize.value,
+    });
+    members.value = res.list;
+    membersTotal.value = res.total;
+  } finally {
+    membersLoading.value = false;
+  }
+}
+
+function handleMembersPageChange(page: number, pageSize: number) {
+  membersPage.value = page;
+  membersPageSize.value = pageSize;
+  loadMembers();
+}
 
 // 系统消息快捷发送 drawer
 const sysMsgDrawerOpen = ref(false);
@@ -106,7 +134,8 @@ function handleRemoveMember(m: PrivchatGroupApi.Member) {
     onOk: async () => {
       await removeGroupMember(groupId, m.user_id);
       message.success('已移除');
-      await loadGroup();
+      // member_count 在群详情上，成员在分页接口上，两边都要刷。
+      await Promise.all([loadGroup(), loadMembers()]);
     },
   });
 }
@@ -125,13 +154,14 @@ function handleSetMemberRole(
     onOk: async () => {
       await setGroupMemberRole(groupId, m.user_id, next);
       message.success('角色已更新');
-      await loadGroup();
+      await loadMembers();
     },
   });
 }
 
 onMounted(async () => {
   await loadGroup();
+  await loadMembers();
 });
 </script>
 
@@ -196,7 +226,7 @@ onMounted(async () => {
         :title="`成员列表 (${group.member_count})`"
       >
         <Empty
-          v-if="!group.members || group.members.length === 0"
+          v-if="!membersLoading && members.length === 0"
           description="暂无成员"
         />
         <Table
@@ -209,8 +239,15 @@ onMounted(async () => {
             { title: '加入时间', key: 'joined_at', width: 170 },
             { title: '操作', key: 'actions', width: 320 },
           ]"
-          :data-source="group.members"
-          :pagination="{ pageSize: 50 }"
+          :data-source="members"
+          :loading="membersLoading"
+          :pagination="{
+            current: membersPage,
+            pageSize: membersPageSize,
+            total: membersTotal,
+            showSizeChanger: true,
+            onChange: handleMembersPageChange,
+          }"
           row-key="user_id"
           size="small"
         >

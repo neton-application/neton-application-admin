@@ -1,30 +1,22 @@
 <script lang="ts" setup>
-import type { MemberUserApi } from '#/api/member/user';
+import type { MemberUserApi } from '#/api/account/user';
 
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 import { useVbenModal } from '@vben/common-ui';
-import { fenToYuan, yuanToFen } from '@vben/utils';
 
 import { message } from 'ant-design-vue';
 
 import { useVbenForm } from '#/adapter/form';
-import { getUser } from '#/api/member/user';
-import {
-  getWalletByUserId,
-  updateWalletBalance,
-} from '#/api/pay/wallet/balance';
+import { getUser, updateUserLevel } from '#/api/account/user';
 import { $t } from '#/locales';
 
-import { useBalanceFormSchema } from '../data';
+import { useLevelFormSchema } from '../data';
 
 const emit = defineEmits(['success']);
-const formData = ref({
-  id: 0,
-  nickname: '',
-  balance: '0',
-  changeBalance: 0,
-  changeType: 1,
+const formData = ref<MemberUserApi.User>();
+const getTitle = computed(() => {
+  return $t('ui.actionTitle.edit', ['用户等级']);
 });
 
 const [Form, formApi] = useVbenForm({
@@ -33,10 +25,10 @@ const [Form, formApi] = useVbenForm({
       class: 'w-full',
     },
     formItemClass: 'col-span-2',
-    labelWidth: 100,
+    labelWidth: 80,
   },
   layout: 'horizontal',
-  schema: useBalanceFormSchema(),
+  schema: useLevelFormSchema(),
   showDefaultActions: false,
 });
 
@@ -48,12 +40,10 @@ const [Modal, modalApi] = useVbenModal({
     }
     modalApi.lock();
     // 提交表单
-    const data = await formApi.getValues();
+    const data =
+      (await formApi.getValues()) as MemberUserApi.UserUpdateLevelReqVO;
     try {
-      await updateWalletBalance({
-        userId: data.id,
-        balance: yuanToFen(data.changeBalance) * data.changeType,
-      });
+      await updateUserLevel(data);
       // 关闭并提示
       await modalApi.close();
       emit('success');
@@ -64,6 +54,7 @@ const [Modal, modalApi] = useVbenModal({
   },
   async onOpenChange(isOpen: boolean) {
     if (!isOpen) {
+      formData.value = undefined;
       return;
     }
     // 加载数据
@@ -73,16 +64,7 @@ const [Modal, modalApi] = useVbenModal({
     }
     modalApi.lock();
     try {
-      const user = await getUser(data.id);
-      if (!user || !user.id) {
-        return;
-      }
-      const wallet = await getWalletByUserId({ userId: user.id });
-      formData.value.id = user.id;
-      formData.value.nickname = user.nickname || '';
-      formData.value.balance = fenToYuan(wallet.balance);
-      formData.value.changeType = 1; // 默认增加余额
-      formData.value.changeBalance = 0; // 变动余额默认 0
+      formData.value = await getUser(data.id);
       // 设置到 values
       await formApi.setValues(formData.value);
     } finally {
@@ -93,7 +75,7 @@ const [Modal, modalApi] = useVbenModal({
 </script>
 
 <template>
-  <Modal class="w-1/3" :title="$t('ui.actionTitle.edit', ['用户余额'])">
+  <Modal :title="getTitle" class="w-1/2">
     <Form class="mx-4" />
   </Modal>
 </template>
